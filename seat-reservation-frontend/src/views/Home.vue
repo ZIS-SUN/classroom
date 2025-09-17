@@ -1,615 +1,571 @@
 <template>
   <Layout>
     <div class="home">
-      <!-- 轮播横幅 -->
-      <el-card class="banner-card">
-        <div class="banner">
-          <h1>欢迎使用智能座位预约系统</h1>
-          <p>高效便捷的自习室座位预约平台，为您提供舒适的学习环境</p>
-          <div class="banner-actions">
-            <el-button type="primary" size="large" @click="goToSeatMap">
-              <el-icon><Calendar /></el-icon>
-              立即预约座位
-            </el-button>
-            <el-button size="large" @click="viewMyReservations">
-              <el-icon><List /></el-icon>
-              我的预约
-            </el-button>
+      <!-- 欢迎区域 -->
+      <section class="welcome-section">
+        <div class="hero-content">
+          <div class="hero-text">
+            <h1>座位预订系统</h1>
+            <p>请选择您需要的座位时间</p>
           </div>
-        </div>
-      </el-card>
-
-      <el-row :gutter="20">
-        <!-- 公告栏 -->
-        <el-col :xs="24" :md="16">
-          <el-card class="announcement-card">
-            <template #header>
-              <div class="card-header">
-                <h3>
-                  <el-icon><Bell /></el-icon>
-                  系统公告
-                </h3>
-                <el-button text size="small" @click="viewAllAnnouncements">查看全部</el-button>
-              </div>
-            </template>
-            
-            <div class="announcements" v-loading="announcementsLoading">
-              <div 
-                v-for="announcement in announcements" 
-                :key="announcement.id"
-                class="announcement-item"
-                @click="viewAnnouncement(announcement)"
-              >
-                <div class="announcement-content">
-                  <h4>{{ announcement.title }}</h4>
-                  <p>{{ announcement.summary }}</p>
-                  <div class="announcement-meta">
-                    <span class="date">{{ formatDate(announcement.publishTime) }}</span>
-                    <el-tag v-if="announcement.isTop" type="danger" size="small">置顶</el-tag>
-                  </div>
-                </div>
+          
+          <!-- 快速预约表单 -->
+          <div class="quick-booking-form">
+            <div class="form-row">
+              <div class="form-item">
+                <label>选择日期</label>
+                <el-date-picker
+                  v-model="quickBooking.date"
+                  type="date"
+                  placeholder="今天"
+                  format="YYYY-MM-DD"
+                  value-format="YYYY-MM-DD"
+                  size="large"
+                />
               </div>
               
-              <div v-if="announcements.length === 0" class="no-announcements">
-                暂无公告
+              <div class="form-item">
+                <label>开始时间</label>
+                <el-time-picker
+                  v-model="quickBooking.startTime"
+                  format="HH:mm"
+                  placeholder="现在"
+                  size="large"
+                />
+              </div>
+              
+              <div class="form-item">
+                <label>时长</label>
+                <el-select v-model="quickBooking.duration" placeholder="2小时" size="large">
+                  <el-option label="1小时" :value="1" />
+                  <el-option label="2小时" :value="2" />
+                  <el-option label="3小时" :value="3" />
+                  <el-option label="4小时" :value="4" />
+                  <el-option label="半天" :value="6" />
+                  <el-option label="全天" :value="8" />
+                </el-select>
+              </div>
+              
+              <div class="form-action">
+                <el-button type="primary" size="large" @click="findAvailableSeats" class="find-seats-btn">
+                  查看可用座位
+                </el-button>
               </div>
             </div>
-          </el-card>
-        </el-col>
-
-        <!-- 快捷功能 -->
-        <el-col :xs="24" :md="8">
-          <el-card class="quick-actions-card">
-            <template #header>
-              <h3>
-                <el-icon><Star /></el-icon>
-                快捷功能
-              </h3>
-            </template>
-            
-            <div class="quick-actions">
-              <div class="action-item" @click="goToSeatMap">
-                <el-icon size="24"><Grid /></el-icon>
-                <span>座位地图</span>
-              </div>
-              <div class="action-item" @click="viewMyReservations">
-                <el-icon size="24"><Document /></el-icon>
-                <span>我的预约</span>
-              </div>
-              <div class="action-item" @click="goToProfile">
-                <el-icon size="24"><User /></el-icon>
-                <span>个人中心</span>
-              </div>
-              <div class="action-item" @click="showFeedback">
-                <el-icon size="24"><ChatDotRound /></el-icon>
-                <span>意见反馈</span>
-              </div>
-              <div class="action-item" @click="showHelp">
-                <el-icon size="24"><QuestionFilled /></el-icon>
-                <span>帮助中心</span>
-              </div>
-              <div class="action-item" @click="showRules">
-                <el-icon size="24"><Reading /></el-icon>
-                <span>自习规则</span>
-              </div>
-            </div>
-          </el-card>
-
-          <!-- 统计信息 -->
-          <el-card class="stats-card">
-            <template #header>
-              <h3>
-                <el-icon><DataAnalysis /></el-icon>
-                实时数据
-              </h3>
-            </template>
-            
-            <div class="stats">
-              <div class="stat-item">
-                <div class="stat-number">{{ stats.totalSeats }}</div>
-                <div class="stat-label">总座位数</div>
-              </div>
-              <div class="stat-item">
-                <div class="stat-number">{{ stats.availableSeats }}</div>
-                <div class="stat-label">可用座位</div>
-              </div>
-              <div class="stat-item">
-                <div class="stat-number">{{ stats.todayReservations }}</div>
-                <div class="stat-label">今日预约</div>
-              </div>
-              <div class="stat-item">
-                <div class="stat-number">{{ stats.myReservations }}</div>
-                <div class="stat-label">我的预约</div>
-              </div>
-            </div>
-          </el-card>
-        </el-col>
-      </el-row>
-
-      <!-- 公告详情对话框 -->
-      <el-dialog v-model="announcementDetailVisible" title="公告详情" width="600px">
-        <div v-if="selectedAnnouncement">
-          <h3>{{ selectedAnnouncement.title }}</h3>
-          <div class="announcement-meta">
-            <span>发布时间: {{ formatDateTime(selectedAnnouncement.publishTime) }}</span>
-            <el-tag v-if="selectedAnnouncement.isTop" type="danger" size="small">置顶</el-tag>
           </div>
-          <div class="announcement-content" v-html="selectedAnnouncement.content"></div>
         </div>
-      </el-dialog>
+      </section>
 
-      <!-- 反馈对话框 -->
-      <el-dialog v-model="feedbackVisible" title="意见反馈" width="500px">
-        <el-form :model="feedbackForm" label-width="80px">
-          <el-form-item label="反馈类型">
-            <el-select v-model="feedbackForm.type" placeholder="请选择反馈类型">
-              <el-option label="功能建议" value="SUGGESTION" />
-              <el-option label="问题反馈" value="BUG" />
-              <el-option label="投诉举报" value="COMPLAINT" />
-              <el-option label="其他" value="OTHER" />
-            </el-select>
-          </el-form-item>
-          <el-form-item label="反馈内容">
-            <el-input
-              v-model="feedbackForm.content"
-              type="textarea"
-              :rows="5"
-              placeholder="请详细描述您的问题或建议"
-              maxlength="500"
-              show-word-limit
-            />
-          </el-form-item>
-        </el-form>
-        <template #footer>
-          <el-button @click="feedbackVisible = false">取消</el-button>
-          <el-button type="primary" @click="submitFeedback">提交反馈</el-button>
-        </template>
-      </el-dialog>
-
-      <!-- 帮助对话框 -->
-      <el-dialog v-model="helpVisible" title="帮助中心" width="600px">
-        <div class="help-content">
-          <el-collapse v-model="activeHelp">
-            <el-collapse-item title="如何预约座位？" name="1">
-              <p>1. 点击"座位地图"进入预约页面</p>
-              <p>2. 选择日期和时间段</p>
-              <p>3. 点击可用座位进行预约</p>
-              <p>4. 确认预约信息并提交</p>
-            </el-collapse-item>
-            <el-collapse-item title="如何取消预约？" name="2">
-              <p>1. 进入"我的预约"页面</p>
-              <p>2. 找到要取消的预约记录</p>
-              <p>3. 点击"取消"按钮</p>
-              <p>4. 确认取消操作</p>
-            </el-collapse-item>
-            <el-collapse-item title="预约规则说明" name="3">
-              <p>1. 每人每天最多预约2个时段</p>
-              <p>2. 预约后请按时到场，逾期未到视为违约</p>
-              <p>3. 连续违约3次将暂时限制预约权限</p>
-              <p>4. 可提前取消预约，但请尽早操作</p>
-            </el-collapse-item>
-            <el-collapse-item title="联系我们" name="4">
-              <p>如有问题请联系管理员：</p>
-              <p>电话：123-4567-8900</p>
-              <p>邮箱：admin@library.edu</p>
-              <p>或通过"意见反馈"功能向我们反馈问题</p>
-            </el-collapse-item>
-          </el-collapse>
+      <!-- 统计数据 -->
+      <section class="stats-section">
+        <div class="stats-grid">
+          <div class="stat-item">
+            <div class="stat-content">
+              <div class="stat-number">{{ stats.totalSeats }}</div>
+              <div class="stat-label">总座位数</div>
+            </div>
+          </div>
+          
+          <div class="stat-item">
+            <div class="stat-content">
+              <div class="stat-number">{{ stats.availableSeats }}</div>
+              <div class="stat-label">可用座位</div>
+            </div>
+          </div>
+          
+          <div class="stat-item">
+            <div class="stat-content">
+              <div class="stat-number">{{ stats.myReservations }}</div>
+              <div class="stat-label">我的预约</div>
+            </div>
+          </div>
+          
+          <div class="stat-item">
+            <div class="stat-content">
+              <div class="stat-number">{{ occupancyRate }}%</div>
+              <div class="stat-label">使用率</div>
+            </div>
+          </div>
         </div>
-      </el-dialog>
+      </section>
 
-      <!-- 规则对话框 -->
-      <el-dialog v-model="rulesVisible" title="自习室使用规则" width="600px">
-        <div class="rules-content">
-          <h4>一、预约规则</h4>
-          <ol>
-            <li>用户需实名注册并完善个人信息</li>
-            <li>每人每天最多可预约2个时段</li>
-            <li>预约成功后，请按时到场使用</li>
-            <li>临时有事可提前取消预约</li>
-          </ol>
-
-          <h4>二、使用规则</h4>
-          <ol>
-            <li>保持安静，不得大声喧哗</li>
-            <li>不得占用多个座位</li>
-            <li>保持座位和环境整洁</li>
-            <li>不得在座位上用餐</li>
-            <li>离开时请带走个人物品</li>
-          </ol>
-
-          <h4>三、违规处理</h4>
-          <ol>
-            <li>连续3次预约未到场，将暂停预约权限7天</li>
-            <li>违反使用规则者，将视情况给予警告或暂停权限</li>
-            <li>恶意占座、破坏设施等行为将被永久限制使用</li>
-          </ol>
+      <!-- 推荐座位 -->
+      <section class="recommended-section" v-loading="recommendationsLoading">
+        <div class="section-header">
+          <h2>推荐座位</h2>
         </div>
-      </el-dialog>
+        
+        <div class="seats-grid">
+          <div class="seat-card" v-for="seat in recommendedSeats" :key="seat.id">
+            <div class="seat-info">
+              <div class="seat-number">{{ seat.seatNumber }}</div>
+              <div class="seat-details">
+                <p>{{ seat.floorNumber }}层 {{ seat.area }}区</p>
+                <p>预约率 {{ seat.bookingCount }}%</p>
+              </div>
+              <div class="seat-features">
+                <el-tag v-if="seat.hasPower" size="small" type="success">有电源</el-tag>
+                <el-tag v-if="seat.hasComputer" size="small" type="info">有电脑</el-tag>
+                <el-tag v-if="seat.isQuiet" size="small" type="warning">安静区</el-tag>
+              </div>
+            </div>
+            <el-button type="primary" size="small" @click="quickReserve(seat)" class="reserve-btn">
+              立即预约
+            </el-button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 公告 -->
+      <section class="announcements-section" v-loading="announcementsLoading">
+        <div class="section-header">
+          <h2>系统公告</h2>
+        </div>
+        
+        <div class="announcements-list">
+          <div v-for="announcement in announcements.slice(0, 3)" :key="announcement.id" class="announcement-item">
+            <div class="announcement-title">
+              <el-tag v-if="announcement.isTop" type="danger" size="small">置顶</el-tag>
+              {{ announcement.title }}
+            </div>
+            <div class="announcement-content">{{ announcement.content }}</div>
+            <div class="announcement-time">{{ formatTime(announcement.publishTime || announcement.createTime) }}</div>
+          </div>
+        </div>
+      </section>
     </div>
   </Layout>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { 
-  Calendar, List, Bell, Star, Grid, Document, User, ChatDotRound,
-  QuestionFilled, Reading, DataAnalysis
-} from '@element-plus/icons-vue'
+// 图标导入已移除，使用简洁设计
 import Layout from '@/components/Layout.vue'
-import { useUserStore } from '@/stores/user'
+import { getAnnouncements } from '@/api/announcement'
+import { seatApi } from '@/api/seat'
 
 const router = useRouter()
-const userStore = useUserStore()
 
-// 数据
-const announcementsLoading = ref(false)
-const announcements = ref([])
-const selectedAnnouncement = ref(null)
-const announcementDetailVisible = ref(false)
-
-const stats = reactive({
-  totalSeats: 120,
-  availableSeats: 85,
-  todayReservations: 67,
-  myReservations: 2
+// 响应式数据
+const quickBooking = ref({
+  date: new Date().toISOString().split('T')[0],
+  startTime: '',
+  duration: 2
 })
 
-// 对话框状态
-const feedbackVisible = ref(false)
-const helpVisible = ref(false)
-const rulesVisible = ref(false)
-const activeHelp = ref(['1'])
+const stats = ref({
+  totalSeats: 120,
+  availableSeats: 85,
+  myReservations: 3
+})
 
-// 反馈表单
-const feedbackForm = reactive({
-  type: '',
-  content: ''
+const recommendedSeats = ref([])
+
+const announcements = ref([])
+
+const recommendationsLoading = ref(false)
+const announcementsLoading = ref(false)
+
+// 计算属性
+const occupancyRate = computed(() => {
+  if (stats.value.totalSeats === 0) return 0
+  return Math.round((1 - stats.value.availableSeats / stats.value.totalSeats) * 100)
 })
 
 // 方法
-const formatDate = (dateTime) => {
-  if (!dateTime) return ''
-  return new Date(dateTime).toLocaleDateString('zh-CN')
+const findAvailableSeats = () => {
+  router.push({
+    path: '/seat-map',
+    query: {
+      date: quickBooking.value.date,
+      startTime: quickBooking.value.startTime,
+      duration: quickBooking.value.duration
+    }
+  })
 }
 
-const formatDateTime = (dateTime) => {
-  if (!dateTime) return ''
-  return new Date(dateTime).toLocaleString('zh-CN')
+const quickReserve = (seat) => {
+  ElMessage.info(`正在为您预约座位 ${seat.seatNumber}...`)
+  // 这里可以调用预约API
+  setTimeout(() => {
+    ElMessage.success(`座位 ${seat.seatNumber} 预约成功！`)
+    stats.value.myReservations++
+    stats.value.availableSeats--
+  }, 1000)
 }
 
-const goToSeatMap = () => {
-  router.push('/seat-map')
+const formatTime = (time) => {
+  return new Date(time).toLocaleDateString() + ' ' + new Date(time).toLocaleTimeString().slice(0, 5)
 }
 
-const viewMyReservations = () => {
-  router.push('/reservations')
-}
-
-const goToProfile = () => {
-  router.push('/profile')
-}
-
-const viewAllAnnouncements = () => {
-  ElMessage.info('公告列表功能开发中')
-}
-
-const viewAnnouncement = (announcement) => {
-  selectedAnnouncement.value = announcement
-  announcementDetailVisible.value = true
-}
-
-const showFeedback = () => {
-  feedbackVisible.value = true
-}
-
-const showHelp = () => {
-  helpVisible.value = true
-}
-
-const showRules = () => {
-  rulesVisible.value = true
-}
-
-const submitFeedback = async () => {
-  if (!feedbackForm.type || !feedbackForm.content.trim()) {
-    ElMessage.warning('请填写完整的反馈信息')
-    return
-  }
-
+// 加载推荐座位
+const loadRecommendedSeats = async () => {
   try {
-    const response = await fetch('/api/feedback/submit', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${userStore.token}`
-      },
-      body: JSON.stringify({
-        type: feedbackForm.type,
-        content: feedbackForm.content.trim()
-      })
+    recommendationsLoading.value = true
+    // 获取当前日期和时间参数，获取可用座位作为推荐
+    const today = new Date().toISOString().split('T')[0]
+    const currentHour = new Date().getHours()
+    const startTime = `${String(Math.max(9, currentHour + 1)).padStart(2, '0')}:00`
+    const endTime = `${String(Math.min(21, currentHour + 3)).padStart(2, '0')}:00`
+
+    const response = await seatApi.getSeatLayout({
+      date: today,
+      startTime: startTime,
+      endTime: endTime
     })
 
-    const result = await response.json()
-    if (result.code === 200) {
-      ElMessage.success('反馈提交成功，感谢您的建议！')
-      feedbackVisible.value = false
-      feedbackForm.type = ''
-      feedbackForm.content = ''
-    } else {
-      ElMessage.error(result.message || '提交失败')
+    if (response && response.code === 200) {
+      // 从可用座位中筛选推荐座位（有设施的座位优先推荐）
+      const availableSeats = response.data.filter(seat => seat.status === 'AVAILABLE')
+      const prioritySeats = availableSeats
+        .filter(seat => seat.hasPower || seat.hasComputer || seat.isQuiet)
+        .slice(0, 3)
+
+      recommendedSeats.value = prioritySeats.length > 0 ? prioritySeats : availableSeats.slice(0, 3)
     }
   } catch (error) {
-    console.error('提交反馈失败:', error)
-    ElMessage.error('提交失败，请稍后重试')
-  }
-}
-
-const loadAnnouncements = async () => {
-  announcementsLoading.value = true
-  try {
-    // TODO: 调用公告API
-    // 模拟数据
-    announcements.value = [
+    console.error('加载推荐座位失败:', error)
+    // 显示默认推荐座位
+    recommendedSeats.value = [
       {
         id: 1,
-        title: '系统维护通知',
-        summary: '系统将于今晚22:00-24:00进行维护升级...',
-        content: '亲爱的用户，为了提供更好的服务，系统将于今晚22:00-24:00进行维护升级，届时将暂停服务。请大家提前做好安排，感谢理解与支持！',
-        publishTime: new Date(Date.now() - 2 * 60 * 60 * 1000),
-        isTop: true
+        seatNumber: 'A-2-015',
+        floorNumber: 2,
+        area: 'A',
+        hasPower: true,
+        hasComputer: false,
+        isQuiet: true
       },
       {
         id: 2,
-        title: '新增3楼自习区域',
-        summary: '图书馆3楼新增100个座位，欢迎大家预约使用...',
-        content: '图书馆3楼新增100个座位，配备了更舒适的桌椅和更好的照明设备。新区域已开放预约，欢迎大家使用！',
-        publishTime: new Date(Date.now() - 24 * 60 * 60 * 1000),
-        isTop: false
+        seatNumber: 'B-1-023',
+        floorNumber: 1,
+        area: 'B',
+        hasPower: true,
+        hasComputer: true,
+        isQuiet: false
       },
       {
         id: 3,
-        title: '预约规则更新',
-        summary: '为了更好地服务广大学生，预约规则有所调整...',
-        content: '为了更好地服务广大学生，现调整预约规则：每人每天可预约时段增加至3个，但请大家合理使用，按时到场。',
-        publishTime: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+        seatNumber: 'C-3-008',
+        floorNumber: 3,
+        area: 'C',
+        hasPower: false,
+        hasComputer: false,
+        isQuiet: true
+      }
+    ]
+  } finally {
+    recommendationsLoading.value = false
+  }
+}
+
+// 加载公告数据
+const loadAnnouncements = async () => {
+  try {
+    announcementsLoading.value = true
+    const response = await getAnnouncements({ limit: 3 })
+
+    if (response && response.code === 200) {
+      announcements.value = response.data || []
+    } else {
+      announcements.value = []
+    }
+    console.log('公告数据加载成功:', announcements.value)
+  } catch (error) {
+    console.error('加载公告失败:', error)
+    // 如果API调用失败，显示默认公告
+    announcements.value = [
+      {
+        id: 1,
+        title: '系统公告',
+        content: '暂无公告信息',
+        publishTime: new Date().toISOString(),
         isTop: false
       }
     ]
-  } catch (error) {
-    console.error('加载公告失败:', error)
   } finally {
     announcementsLoading.value = false
   }
 }
 
-const loadStats = async () => {
-  try {
-    // TODO: 调用统计API
-    // 当前使用模拟数据
-  } catch (error) {
-    console.error('加载统计数据失败:', error)
-  }
-}
-
+// 生命周期
 onMounted(() => {
+  // 加载推荐座位数据
+  loadRecommendedSeats()
+
+  // 加载公告数据
   loadAnnouncements()
-  loadStats()
 })
 </script>
 
 <style scoped>
 .home {
+  min-height: 100vh;
+  background: #faf8f5; /* 60% 浅米色背景 */
+}
+
+.welcome-section {
+  padding: 60px 0;
+  background: linear-gradient(135deg, #ff6b35 0%, #ff8f65 100%); /* 10% 橙色渐变 */
+  color: white;
+  margin-bottom: 0;
+}
+
+.hero-content {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 20px;
-}
-
-.banner-card {
-  margin-bottom: 24px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border: none;
-}
-
-.banner-card :deep(.el-card__body) {
-  padding: 40px;
   text-align: center;
+  padding: 0 20px;
 }
 
-.banner h1 {
-  margin: 0 0 16px 0;
-  font-size: 2.5rem;
+.hero-text h1 {
+  font-size: 3rem;
+  margin-bottom: 20px;
+  color: white;
   font-weight: 600;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-.banner p {
-  margin: 0 0 32px 0;
+.hero-text p {
   font-size: 1.2rem;
-  opacity: 0.9;
+  color: rgba(255,255,255,0.9);
+  margin-bottom: 40px;
 }
 
-.banner-actions {
+.quick-booking-form {
+  background: rgba(255,255,255,0.95);
+  padding: 40px;
+  border-radius: 12px;
+  margin-top: 40px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+}
+
+.form-row {
   display: flex;
-  gap: 16px;
+  gap: 20px;
+  align-items: end;
   justify-content: center;
   flex-wrap: wrap;
 }
 
-.card-header {
+.form-item {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  min-width: 150px;
 }
 
-.card-header h3 {
-  margin: 0;
+.form-item label {
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #333;
+}
+
+.form-action {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #303133;
+  align-items: end;
 }
 
-.announcements {
-  max-height: 400px;
-  overflow-y: auto;
-}
-
-.announcement-item {
-  padding: 16px;
-  border-radius: 8px;
-  margin-bottom: 12px;
-  background: #fafafa;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.announcement-item:hover {
-  background: #f0f9ff;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-}
-
-.announcement-content h4 {
-  margin: 0 0 8px 0;
-  color: #303133;
+.find-seats-btn {
+  height: 50px;
+  padding: 0 40px;
+  font-size: 16px;
   font-weight: 600;
 }
 
-.announcement-content p {
-  margin: 0 0 12px 0;
-  color: #606266;
-  line-height: 1.5;
+.stats-section {
+  padding: 60px 0;
+  background: rgba(255, 107, 53, 0.03); /* 10% 橙色半透明背景 */
 }
 
-.announcement-meta {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 12px;
-  color: #909399;
-}
-
-.no-announcements {
-  text-align: center;
-  color: #909399;
-  padding: 40px 0;
-}
-
-.quick-actions {
+.stats-grid {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
-}
-
-.action-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 20px;
-  background: #f8f9fa;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.action-item:hover {
-  background: #e3f2fd;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-}
-
-.action-item span {
-  margin-top: 8px;
-  font-size: 14px;
-  color: #606266;
-}
-
-.stats {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 40px;
 }
 
 .stat-item {
   text-align: center;
-  padding: 16px;
-  background: #f8f9fa;
-  border-radius: 8px;
+  padding: 40px 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+  transition: transform 0.3s ease;
+}
+
+.stat-item:hover {
+  transform: translateY(-5px);
+}
+
+.stat-content {
+  padding: 0;
 }
 
 .stat-number {
-  font-size: 2rem;
-  font-weight: 600;
-  color: #409eff;
-  margin-bottom: 4px;
+  font-size: 3rem;
+  font-weight: 700;
+  color: #ff6b35; /* 10% 橙色强调数字 */
+  margin-bottom: 12px;
 }
 
 .stat-label {
-  font-size: 12px;
-  color: #909399;
+  color: #718096; /* 30% 深灰色 */
+  font-size: 16px;
+  font-weight: 500;
 }
 
-.announcement-card,
-.quick-actions-card,
-.stats-card {
+.recommended-section, .announcements-section {
+  padding: 60px 0;
+}
+
+.recommended-section {
+  background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+}
+
+.announcements-section {
+  background: rgba(249, 250, 251, 0.8);
+}
+
+.section-header {
+  max-width: 1200px;
+  margin: 0 auto 40px;
+  padding: 0 20px;
+}
+
+.section-header h2 {
+  font-size: 2.5rem;
+  font-weight: 600;
+  color: #2d3748; /* 30% 深灰色 */
+  text-align: center;
+  margin: 0;
+}
+
+.seats-grid {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 30px;
+}
+
+.seat-card {
+  background: white;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+  transition: transform 0.3s ease;
+}
+
+.seat-card:hover {
+  transform: translateY(-5px);
+}
+
+.seat-info {
   margin-bottom: 20px;
 }
 
-.help-content,
-.rules-content {
+.seat-number {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #ff6b35; /* 10% 橙色强调 */
+  margin-bottom: 12px;
+}
+
+.seat-details {
+  margin-bottom: 12px;
+}
+
+.seat-details p {
+  margin: 6px 0;
+  color: #718096; /* 30% 深灰色 */
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.seat-features {
+  margin-bottom: 20px;
+}
+
+.seat-features .el-tag {
+  margin-right: 8px;
+  margin-bottom: 4px;
+}
+
+.reserve-btn {
+  width: 100%;
+  height: 45px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.announcements-list {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+  display: grid;
+  gap: 20px;
+}
+
+.announcement-item {
+  background: white;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+  transition: transform 0.3s ease;
+}
+
+.announcement-item:hover {
+  transform: translateY(-2px);
+}
+
+.announcement-title {
+  font-weight: 600;
+  font-size: 1.2rem;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #2d3748; /* 30% 深灰色 */
+}
+
+.announcement-content {
+  color: #718096; /* 30% 深灰色 */
+  margin-bottom: 12px;
   line-height: 1.6;
+  font-size: 15px;
 }
 
-.rules-content h4 {
-  color: #303133;
-  margin: 20px 0 10px 0;
-}
-
-.rules-content ol {
-  margin-bottom: 20px;
-}
-
-.rules-content li {
-  margin-bottom: 8px;
-  color: #606266;
+.announcement-time {
+  color: #9ca3af; /* 30% 浅灰色 */
+  font-size: 13px;
+  font-weight: 500;
 }
 
 @media (max-width: 768px) {
-  .home {
-    padding: 16px;
-  }
-  
-  .banner h1 {
-    font-size: 2rem;
-  }
-  
-  .banner p {
-    font-size: 1rem;
-  }
-  
-  .banner-actions {
+  .form-row {
     flex-direction: column;
+    align-items: stretch;
   }
   
-  .quick-actions {
-    grid-template-columns: repeat(3, 1fr);
+  .form-item {
+    min-width: auto;
   }
   
-  .stats {
-    grid-template-columns: repeat(4, 1fr);
-  }
-}
-
-@media (max-width: 480px) {
-  .quick-actions {
-    grid-template-columns: repeat(2, 1fr);
+  .hero-text h1 {
+    font-size: 1.5rem;
   }
   
-  .stats {
-    grid-template-columns: repeat(2, 1fr);
+  .stat-number {
+    font-size: 1.2rem;
   }
 }
 </style>

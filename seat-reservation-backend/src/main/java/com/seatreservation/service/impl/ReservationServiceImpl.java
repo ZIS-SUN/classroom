@@ -58,7 +58,7 @@ public class ReservationServiceImpl extends ServiceImpl<ReservationMapper, Reser
         if (seat == null) {
             throw new RuntimeException("座位不存在");
         }
-        if (!"available".equals(seat.getStatus())) {
+        if (!"AVAILABLE".equals(seat.getStatus())) {
             throw new RuntimeException("座位不可用");
         }
 
@@ -66,7 +66,7 @@ public class ReservationServiceImpl extends ServiceImpl<ReservationMapper, Reser
         LambdaQueryWrapper<Reservation> conflictWrapper = new LambdaQueryWrapper<>();
         conflictWrapper.eq(Reservation::getSeatId, request.getSeatId())
                 .eq(Reservation::getReservationDate, request.getReservationDate())
-                .in(Reservation::getStatus, "active", "checked_in")
+                .in(Reservation::getStatus, "RESERVED", "USING")
                 .and(wrapper -> wrapper
                         .lt(Reservation::getStartTime, request.getEndTime())
                         .gt(Reservation::getEndTime, request.getStartTime()));
@@ -79,7 +79,7 @@ public class ReservationServiceImpl extends ServiceImpl<ReservationMapper, Reser
         LambdaQueryWrapper<Reservation> userConflictWrapper = new LambdaQueryWrapper<>();
         userConflictWrapper.eq(Reservation::getUserId, userId)
                 .eq(Reservation::getReservationDate, request.getReservationDate())
-                .in(Reservation::getStatus, "active", "checked_in")
+                .in(Reservation::getStatus, "RESERVED", "USING")
                 .and(wrapper -> wrapper
                         .lt(Reservation::getStartTime, request.getEndTime())
                         .gt(Reservation::getEndTime, request.getStartTime()));
@@ -106,7 +106,7 @@ public class ReservationServiceImpl extends ServiceImpl<ReservationMapper, Reser
         reservation.setReservationDate(request.getReservationDate());
         reservation.setStartTime(request.getStartTime());
         reservation.setEndTime(request.getEndTime());
-        reservation.setStatus("active");
+        reservation.setStatus("RESERVED");
         reservation.setTotalFee(totalFee);
         reservation.setRemark(request.getRemark());
         reservation.setCreatedTime(LocalDateTime.now());
@@ -129,7 +129,7 @@ public class ReservationServiceImpl extends ServiceImpl<ReservationMapper, Reser
             throw new RuntimeException("无权限操作该预约");
         }
 
-        if (!"active".equals(reservation.getStatus())) {
+        if (!"RESERVED".equals(reservation.getStatus())) {
             throw new RuntimeException("预约状态无法取消");
         }
 
@@ -144,7 +144,7 @@ public class ReservationServiceImpl extends ServiceImpl<ReservationMapper, Reser
             throw new RuntimeException("预约开始前30分钟内不能取消");
         }
 
-        reservation.setStatus("cancelled");
+        reservation.setStatus("CANCELLED");
         reservation.setUpdatedTime(LocalDateTime.now());
         reservationMapper.updateById(reservation);
     }
@@ -161,7 +161,7 @@ public class ReservationServiceImpl extends ServiceImpl<ReservationMapper, Reser
             throw new RuntimeException("无权限操作该预约");
         }
 
-        if (!"active".equals(reservation.getStatus())) {
+        if (!"RESERVED".equals(reservation.getStatus())) {
             throw new RuntimeException("预约状态无法签到");
         }
 
@@ -181,7 +181,7 @@ public class ReservationServiceImpl extends ServiceImpl<ReservationMapper, Reser
             throw new RuntimeException("签到时间已过，请在预约开始后30分钟内签到");
         }
 
-        reservation.setStatus("checked_in");
+        reservation.setStatus("USING");
         reservation.setCheckInTime(now);
         reservation.setUpdatedTime(now);
         reservationMapper.updateById(reservation);
@@ -199,12 +199,12 @@ public class ReservationServiceImpl extends ServiceImpl<ReservationMapper, Reser
             throw new RuntimeException("无权限操作该预约");
         }
 
-        if (!"checked_in".equals(reservation.getStatus())) {
+        if (!"USING".equals(reservation.getStatus())) {
             throw new RuntimeException("预约状态无法签退");
         }
 
         LocalDateTime now = LocalDateTime.now();
-        reservation.setStatus("completed");
+        reservation.setStatus("COMPLETED");
         reservation.setCheckOutTime(now);
         reservation.setUpdatedTime(now);
         reservationMapper.updateById(reservation);
@@ -297,18 +297,18 @@ public class ReservationServiceImpl extends ServiceImpl<ReservationMapper, Reser
         LocalDateTime reservationEnd = LocalDateTime.of(reservation.getReservationDate(), reservation.getEndTime());
         
         // 是否可以取消
-        boolean canCancel = "active".equals(reservation.getStatus()) && 
+        boolean canCancel = "RESERVED".equals(reservation.getStatus()) && 
                            now.isBefore(reservationStart.minusMinutes(30));
         vo.setCanCancel(canCancel);
 
         // 是否可以签到
-        boolean canCheckIn = "active".equals(reservation.getStatus()) && 
+        boolean canCheckIn = "RESERVED".equals(reservation.getStatus()) && 
                             now.isAfter(reservationStart.minusMinutes(15)) && 
                             now.isBefore(reservationStart.plusMinutes(30));
         vo.setCanCheckIn(canCheckIn);
 
         // 是否可以签退
-        boolean canCheckOut = "checked_in".equals(reservation.getStatus()) && 
+        boolean canCheckOut = "USING".equals(reservation.getStatus()) && 
                              now.isBefore(reservationEnd.plusMinutes(30));
         vo.setCanCheckOut(canCheckOut);
 

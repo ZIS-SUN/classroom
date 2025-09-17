@@ -165,13 +165,19 @@ const handleRegister = async () => {
       email: form.email || null
     }
     
-    await authApi.register(registerData)
+    const result = await authApi.register(registerData)
     
-    ElMessage.success('注册成功，请登录')
-    router.push('/login')
+    // 处理新的响应格式
+    if (result && result.code === 200) {
+      ElMessage.success('注册成功，请登录')
+      router.push('/login')
+    } else {
+      ElMessage.error(result?.message || '注册失败')
+    }
     
   } catch (error) {
     console.error('注册失败:', error)
+    ElMessage.error('注册失败，请检查网络连接')
   } finally {
     loading.value = false
   }

@@ -180,7 +180,16 @@ public class SeatServiceImpl extends ServiceImpl<SeatMapper, Seat> implements Se
         
         return queryWrapper;
     }
-    
+
+    @Override
+    public boolean hasActiveReservations(Long seatId) {
+        QueryWrapper<Reservation> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("seat_id", seatId)
+                   .in("status", "RESERVED", "USING", "COMPLETED");
+
+        return reservationMapper.selectCount(queryWrapper) > 0;
+    }
+
     private boolean checkSeatAvailable(Long seatId, LocalDate date, LocalTime startTime, LocalTime endTime) {
         if (date == null || startTime == null || endTime == null) {
             return true;

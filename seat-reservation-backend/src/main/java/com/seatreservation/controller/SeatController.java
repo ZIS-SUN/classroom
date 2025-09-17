@@ -205,7 +205,10 @@ public class SeatController {
             }
 
             // 检查座位是否有未完成的预约
-            // TODO: 这里可以添加检查逻辑，确保座位没有未完成的预约
+            boolean hasActiveReservations = seatService.hasActiveReservations(seatId);
+            if (hasActiveReservations) {
+                return Result.error("该座位存在未完成的预约，无法删除");
+            }
 
             boolean success = seatService.removeById(seatId);
             

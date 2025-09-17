@@ -94,26 +94,42 @@
 
       <!-- 页面内容 -->
       <div class="page-content">
-        <slot></slot>
+        <router-view></router-view>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
-  Monitor, Menu, DataAnalysis, Grid, Calendar, User, DocumentCopy, 
+  Monitor, Menu, DataAnalysis, Grid, Calendar, User, DocumentCopy,
   Setting, UserFilled, ArrowDown, Bell
 } from '@element-plus/icons-vue'
+import { useUserStore } from '@/stores/user'
 
 const router = useRouter()
-const emit = defineEmits(['menu-change'])
+const route = useRoute()
+const userStore = useUserStore()
 
 const isCollapsed = ref(false)
 const activeMenu = ref('dashboard')
+
+// 监听路由变化，更新活动菜单
+watch(() => route.path, (newPath) => {
+  const pathMap = {
+    '/admin/dashboard': 'dashboard',
+    '/admin/seats': 'seats',
+    '/admin/reservations': 'reservations',
+    '/admin/users': 'users',
+    '/admin/announcements': 'announcements',
+    '/admin/reports': 'reports',
+    '/admin/settings': 'settings'
+  }
+  activeMenu.value = pathMap[newPath] || 'dashboard'
+}, { immediate: true })
 
 // 用户信息 - 从localStorage获取
 const userInfo = computed(() => {
@@ -145,41 +161,42 @@ const toggleSidebar = () => {
 
 // 处理菜单选择
 const handleMenuSelect = (key) => {
-  activeMenu.value = key
-  emit('menu-change', key)
+  router.push(`/admin/${key}`)
 }
 
 // 处理用户操作
-const handleUserAction = (command) => {
+const handleUserAction = async (command) => {
   if (command === 'logout') {
-    ElMessageBox.confirm(
-      '确定要退出登录吗？',
-      '提示',
-      {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }
-    ).then(() => {
+    try {
+      await ElMessageBox.confirm(
+        '确定要退出登录吗？',
+        '提示',
+        {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }
+      )
+      
+      // 清除用户数据
+      userStore.logout()
+      
       // 清除本地存储
       localStorage.removeItem('token')
       localStorage.removeItem('userInfo')
       
-      // 跳转到登录页
-      router.push('/login')
       ElMessage.success('已退出登录')
-    })
+      
+      // 强制跳转到登录页
+      window.location.href = '/login'
+    } catch {
+      // 用户取消
+    }
   } else if (command === 'profile') {
     ElMessage.info('个人信息功能开发中')
   }
 }
 
-// 暴露方法给父组件
-defineExpose({
-  setActiveMenu: (menu) => {
-    activeMenu.value = menu
-  }
-})
 </script>
 
 <style scoped>

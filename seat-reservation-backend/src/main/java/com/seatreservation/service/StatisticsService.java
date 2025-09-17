@@ -23,4 +23,39 @@ public interface StatisticsService {
      * 获取用户活跃度统计
      */
     Map<String, Object> getUserActivityStatistics();
+    
+    /**
+     * 获取收入统计
+     */
+    Map<String, Object> getRevenueStatistics(Integer days);
+    
+    /**
+     * 获取热门时段统计
+     */
+    Map<String, Object> getPeakHoursStatistics();
+    
+    /**
+     * 获取座位使用热力图数据
+     */
+    Map<String, Object> getHeatmapData(Integer days);
+    
+    /**
+     * 获取综合报表数据
+     */
+    Map<String, Object> getComprehensiveReport(Integer days);
+
+    /**
+     * 获取座位类型分布
+     */
+    Map<String, Object> getSeatTypeDistribution();
+
+    /**
+     * 获取最近预约记录
+     */
+    Map<String, Object> getRecentReservations(Integer limit);
+
+    /**
+     * 获取座位使用排行
+     */
+    Map<String, Object> getTopSeats(Integer limit);
 }

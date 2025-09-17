@@ -4,7 +4,7 @@ import { useUserStore } from '@/stores/user'
 import router from '@/router'
 
 const request = axios.create({
-  baseURL: '/api',
+  baseURL: 'http://localhost:8082/api',
   timeout: 10000
 })
 
@@ -14,6 +14,9 @@ request.interceptors.request.use(
     const userStore = useUserStore()
     if (userStore.token) {
       config.headers.Authorization = `Bearer ${userStore.token}`
+    }
+    if (userStore.user?.id) {
+      config.headers.userId = userStore.user.id
     }
     return config
   },
@@ -25,14 +28,8 @@ request.interceptors.request.use(
 // 响应拦截器
 request.interceptors.response.use(
   response => {
-    const { code, message, data } = response.data
-    
-    if (code === 200) {
-      return data
-    } else {
-      ElMessage.error(message || '请求失败')
-      return Promise.reject(new Error(message || '请求失败'))
-    }
+    // 直接返回完整的 response.data，包含 {code, message, data} 结构
+    return response.data
   },
   error => {
     if (error.response?.status === 401) {

@@ -67,7 +67,16 @@
 
               <div class="card-actions">
                 <el-button
-                  v-if="reservation.canCancel"
+                  v-if="reservation.status === 'PENDING' || reservation.status === 'UNPAID'"
+                  type="primary"
+                  size="small"
+                  @click="handlePayment(reservation)"
+                >
+                  立即支付
+                </el-button>
+                
+                <el-button
+                  v-if="reservation.status === 'PENDING' || reservation.status === 'UNPAID' || reservation.status === 'RESERVED'"
                   type="danger"
                   size="small"
                   plain
@@ -193,6 +202,18 @@
           <el-button @click="showDetailDialog = false">关闭</el-button>
         </template>
       </el-dialog>
+      
+      <!-- 支付对话框 -->
+      <PaymentDialog
+        :visible="showPaymentDialog"
+        :reservation-id="paymentReservation?.id"
+        :seat-info="paymentReservation ? `${paymentReservation.seatNumber} (${paymentReservation.floorNumber}楼 ${paymentReservation.seatArea}区)` : ''"
+        :reservation-time="paymentReservation ? `${paymentReservation.reservationDate} ${paymentReservation.startTime}-${paymentReservation.endTime}` : ''"
+        :amount="paymentReservation?.totalFee || 0"
+        @success="handlePaymentSuccess"
+        @cancel="handlePaymentCancel"
+        @error="handlePaymentError"
+      />
     </div>
   </Layout>
 </template>
@@ -202,6 +223,7 @@ import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Calendar, Clock, Timer, Money } from '@element-plus/icons-vue'
 import Layout from '@/components/Layout.vue'
+import PaymentDialog from '@/components/PaymentDialog.vue'
 import { reservationApi } from '@/api/reservation'
 
 const loading = ref(false)
@@ -211,8 +233,16 @@ const currentPage = ref(1)
 const pageSize = ref(10)
 const showDetailDialog = ref(false)
 const selectedReservation = ref(null)
+const showPaymentDialog = ref(false)
+const paymentReservation = ref(null)
 
 const statusTextMap = {
+  'PENDING': '待支付',
+  'UNPAID': '未支付',
+  'RESERVED': '已预约',
+  'CHECKED_IN': '已签到',
+  'COMPLETED': '已完成',
+  'CANCELLED': '已取消',
   'active': '已预约',
   'checked_in': '已签到',
   'completed': '已完成',
@@ -220,6 +250,12 @@ const statusTextMap = {
 }
 
 const statusTypeMap = {
+  'PENDING': 'warning',
+  'UNPAID': 'danger',
+  'RESERVED': 'primary',
+  'CHECKED_IN': 'success',
+  'COMPLETED': 'info',
+  'CANCELLED': 'danger',
   'active': 'primary',
   'checked_in': 'success',
   'completed': 'info',
@@ -247,14 +283,41 @@ const loadReservations = async () => {
     }
     
     const response = await reservationApi.getUserReservations(params)
-    reservations.value = response.records || []
-    total.value = response.total || 0
+    if (response && response.code === 200) {
+      reservations.value = response.data.records || []
+      total.value = response.data.total || 0
+    } else {
+      console.error('获取预约数据失败:', response)
+      reservations.value = []
+      total.value = 0
+    }
   } catch (error) {
     console.error('加载预约记录失败:', error)
     ElMessage.error('加载预约记录失败')
   } finally {
     loading.value = false
   }
+}
+
+const handlePayment = (reservation) => {
+  paymentReservation.value = reservation
+  showPaymentDialog.value = true
+}
+
+const handlePaymentSuccess = () => {
+  showPaymentDialog.value = false
+  paymentReservation.value = null
+  ElMessage.success('支付成功')
+  loadReservations()
+}
+
+const handlePaymentCancel = () => {
+  showPaymentDialog.value = false
+  paymentReservation.value = null
+}
+
+const handlePaymentError = (error) => {
+  ElMessage.error(error || '支付失败')
 }
 
 const handleCancel = async (reservation) => {
@@ -275,6 +338,7 @@ const handleCancel = async (reservation) => {
   } catch (error) {
     if (error !== 'cancel') {
       console.error('取消预约失败:', error)
+      ElMessage.error('取消预约失败')
     }
   }
 }

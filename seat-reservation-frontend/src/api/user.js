@@ -3,6 +3,11 @@ import request from '@/utils/request'
 export const userApi = {
   // ========== 管理员接口 ==========
 
+  // 分页查询用户
+  getUserPage(params) {
+    return request.get('/user/admin/list', { params })
+  },
+
   // 获取所有用户列表
   getUserList(params) {
     return request.get('/user/admin/list', { params })

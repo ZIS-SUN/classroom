@@ -38,4 +38,9 @@ public interface SeatService extends IService<Seat> {
      * 更新座位状态
      */
     void updateSeatStatus(Long seatId, String status);
+
+    /**
+     * 检查座位是否有未完成的预约
+     */
+    boolean hasActiveReservations(Long seatId);
 }

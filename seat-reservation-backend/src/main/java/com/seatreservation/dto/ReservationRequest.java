@@ -3,7 +3,7 @@ package com.seatreservation.dto;
 import lombok.Data;
 import org.springframework.format.annotation.DateTimeFormat;
 
-import javax.validation.constraints.Future;
+import javax.validation.constraints.FutureOrPresent;
 import javax.validation.constraints.NotNull;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -18,7 +18,6 @@ public class ReservationRequest {
     
     @NotNull(message = "预约日期不能为空")
     @DateTimeFormat(pattern = "yyyy-MM-dd")
-    @Future(message = "预约日期必须是未来时间")
     private LocalDate reservationDate;
     
     @NotNull(message = "开始时间不能为空")

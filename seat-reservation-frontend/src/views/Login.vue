@@ -2,7 +2,7 @@
   <div class="login-container">
     <div class="login-card">
       <div class="login-header">
-        <h2>自习室座位预约</h2>
+        <h2>自习室座位预定</h2>
         <p class="subtitle">请登录您的账户</p>
       </div>
       
@@ -83,23 +83,37 @@ const handleLogin = async () => {
     if (!valid) return
 
     loading.value = true
-    const response = await authApi.login(form)
+    const result = await authApi.login(form)
     
-    userStore.setToken(response.token)
-    userStore.setUser({
-      id: response.id,
-      username: response.username,
-      realName: response.realName,
-      role: response.role,
-      email: response.email,
-      phone: response.phone
-    })
-    
-    ElMessage.success('登录成功')
-    router.push('/seat-map')
+    // 现在响应拦截器返回完整的 {code, message, data} 结构
+    if (result && result.code === 200) {
+      const response = result.data
+      
+      userStore.setToken(response.token)
+      userStore.setUser({
+        id: response.id,
+        username: response.username,
+        realName: response.realName,
+        role: response.role,
+        email: response.email,
+        phone: response.phone
+      })
+      
+      ElMessage.success('登录成功')
+      
+      // 根据用户角色跳转到不同页面
+      if (response.role === 'ADMIN') {
+        router.push('/admin')
+      } else {
+        router.push('/seat-map')
+      }
+    } else {
+      ElMessage.error(result?.message || '登录失败')
+    }
     
   } catch (error) {
     console.error('登录失败:', error)
+    ElMessage.error('登录失败，请检查网络连接')
   } finally {
     loading.value = false
   }
@@ -112,7 +126,7 @@ const handleLogin = async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   padding: 20px;
   position: relative;
 }
@@ -124,86 +138,115 @@ const handleLogin = async () => {
   left: 0;
   right: 0;
   bottom: 0;
-  background-image: 
-    radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
-    radial-gradient(circle at 80% 20%, rgba(255, 119, 48, 0.15) 0%, transparent 50%),
-    radial-gradient(circle at 40% 40%, rgba(120, 119, 198, 0.15) 0%, transparent 50%);
+  background: 
+    radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 40% 80%, rgba(120, 119, 198, 0.2) 0%, transparent 50%);
+  animation: float 6s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
 }
 
 .login-card {
   width: 100%;
-  max-width: 420px;
-  background: white;
-  border-radius: 16px;
-  padding: 40px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  max-width: 400px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border-radius: 20px;
+  padding: 40px 32px;
+  box-shadow: 
+    0 20px 40px rgba(0, 0, 0, 0.1),
+    0 0 0 1px rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
   position: relative;
   z-index: 1;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.login-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 
+    0 30px 60px rgba(0, 0, 0, 0.15),
+    0 0 0 1px rgba(255, 255, 255, 0.3);
 }
 
 .login-header {
   text-align: center;
-  margin-bottom: 40px;
+  margin-bottom: 32px;
 }
 
 .login-header h2 {
-  color: #2c3e50;
-  margin: 0 0 12px 0;
-  font-weight: 700;
-  font-size: 28px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--color-text-primary);
+  margin: 0 0 8px 0;
+  font-weight: 600;
+  font-size: 24px;
+  line-height: 1.2;
 }
 
 .subtitle {
-  color: #7f8c8d;
+  color: var(--color-text-secondary);
   margin: 0;
-  font-size: 16px;
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.4;
 }
 
 :deep(.el-form-item) {
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 :deep(.el-input__wrapper) {
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  border: 1px solid #e8eaed;
-  transition: all 0.3s ease;
-  padding: 8px 16px;
+  border-radius: var(--radius-base);
+  box-shadow: none;
+  border: 1px solid var(--color-border);
+  transition: all 0.2s ease;
+  padding: 12px 16px;
+  background-color: var(--color-background-primary);
 }
 
 :deep(.el-input__wrapper:hover) {
-  border-color: #667eea;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+  border-color: var(--color-border-dark);
+  background-color: var(--color-background-primary);
 }
 
 :deep(.el-input__wrapper.is-focus) {
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+  background-color: var(--color-background-primary);
 }
 
 :deep(.el-input__inner) {
-  font-size: 15px;
-  color: #2c3e50;
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  font-weight: 400;
+}
+
+:deep(.el-input__inner::placeholder) {
+  color: var(--color-text-placeholder);
+  font-weight: 400;
+}
+
+:deep(.el-input__prefix-inner) {
+  color: var(--color-text-tertiary);
 }
 
 .login-btn {
   width: 100%;
-  height: 52px;
+  height: 48px;
   font-size: 16px;
   font-weight: 600;
   border-radius: 12px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border: none;
   transition: all 0.3s ease;
+  margin-top: 12px;
   position: relative;
   overflow: hidden;
+  color: white;
+  letter-spacing: 0.5px;
 }
 
 .login-btn::before {
@@ -223,102 +266,63 @@ const handleLogin = async () => {
 
 .login-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+}
+
+.login-btn:active {
+  transform: translateY(0);
+  transition: transform 0.1s ease;
 }
 
 .register-link {
   text-align: center;
   margin-top: 24px;
   padding-top: 24px;
-  border-top: 1px solid #f0f2f5;
+  border-top: 1px solid var(--color-border);
   font-size: 14px;
-  color: #7f8c8d;
+  color: var(--color-text-tertiary);
 }
 
 .register-link span {
-  margin-right: 8px;
+  margin-right: 4px;
 }
 
 :deep(.el-link) {
-  font-weight: 600;
+  font-weight: 500;
   text-decoration: none;
+  color: var(--color-primary);
 }
 
 :deep(.el-link:hover) {
-  text-decoration: underline;
+  text-decoration: none;
+  color: var(--color-primary-hover);
 }
 
 /* 移动端响应式优化 */
 @media (max-width: 768px) {
   .login-container {
-    padding: 15px;
+    padding: 16px;
     min-height: 100vh;
   }
   
   .login-card {
     max-width: 100%;
-    padding: 30px 25px;
+    padding: 40px 24px;
     margin: 0;
+    border-radius: 16px;
   }
   
   .login-header h2 {
-    font-size: 24px;
-    margin-bottom: 8px;
+    font-size: 28px;
+    margin-bottom: 6px;
   }
   
   .subtitle {
-    font-size: 15px;
-  }
-  
-  .login-header {
-    margin-bottom: 30px;
-  }
-  
-  :deep(.el-form-item) {
-    margin-bottom: 20px;
-  }
-  
-  :deep(.el-input__wrapper) {
-    padding: 10px 14px;
-  }
-  
-  :deep(.el-input__inner) {
-    font-size: 16px; /* 防止iOS缩放 */
-  }
-  
-  .login-btn {
-    height: 48px;
     font-size: 16px;
-    margin-top: 10px;
-  }
-  
-  .register-link {
-    margin-top: 20px;
-    padding-top: 20px;
-    font-size: 14px;
-  }
-}
-
-@media (max-width: 480px) {
-  .login-container {
-    padding: 10px;
-  }
-  
-  .login-card {
-    padding: 25px 20px;
-    border-radius: 12px;
-  }
-  
-  .login-header h2 {
-    font-size: 22px;
-  }
-  
-  .subtitle {
-    font-size: 14px;
   }
   
   .login-header {
-    margin-bottom: 25px;
+    margin-bottom: 28px;
   }
   
   :deep(.el-form-item) {
@@ -326,54 +330,101 @@ const handleLogin = async () => {
   }
   
   :deep(.el-input__wrapper) {
-    padding: 9px 12px;
+    padding: 12px 16px;
+  }
+  
+  :deep(.el-input__inner) {
+    font-size: 17px; /* 防止iOS缩放 */
   }
   
   .login-btn {
-    height: 44px;
-    font-size: 15px;
+    height: 48px;
+    font-size: 17px;
+    margin-top: 6px;
   }
   
   .register-link {
-    font-size: 13px;
+    margin-top: 20px;
+    padding-top: 20px;
+    font-size: 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .login-container {
+    padding: 12px;
+  }
+  
+  .login-card {
+    padding: 32px 20px;
+    border-radius: 16px;
+  }
+  
+  .login-header h2 {
+    font-size: 26px;
+  }
+  
+  .subtitle {
+    font-size: 15px;
+  }
+  
+  .login-header {
+    margin-bottom: 24px;
+  }
+  
+  :deep(.el-form-item) {
+    margin-bottom: 16px;
+  }
+  
+  :deep(.el-input__wrapper) {
+    padding: 12px 16px;
+  }
+  
+  .login-btn {
+    height: 48px;
+    font-size: 17px;
+  }
+  
+  .register-link {
+    font-size: 14px;
   }
 }
 
 /* 横屏模式优化 */
 @media (max-height: 600px) and (orientation: landscape) {
   .login-container {
-    padding: 10px;
+    padding: 12px;
   }
   
   .login-card {
-    padding: 20px;
-    max-width: 420px;
+    padding: 24px;
+    max-width: 380px;
   }
   
   .login-header {
-    margin-bottom: 20px;
+    margin-bottom: 16px;
   }
   
   .login-header h2 {
-    font-size: 20px;
-    margin-bottom: 5px;
+    font-size: 24px;
+    margin-bottom: 4px;
   }
   
   .subtitle {
-    font-size: 13px;
+    font-size: 15px;
   }
   
   :deep(.el-form-item) {
-    margin-bottom: 15px;
+    margin-bottom: 12px;
   }
   
   .login-btn {
-    height: 42px;
+    height: 44px;
   }
   
   .register-link {
-    margin-top: 15px;
-    padding-top: 15px;
+    margin-top: 12px;
+    padding-top: 12px;
   }
 }
 </style>

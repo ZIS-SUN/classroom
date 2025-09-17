@@ -2,16 +2,16 @@
   <AdminLayout @menu-change="handleMenuChange">
     <!-- 数据看板 -->
     <div v-if="currentView === 'dashboard'" class="dashboard">
-      <!-- 统计卡片 -->
+      <!-- 统计卡片 - 现代化设计 -->
       <el-row :gutter="20" class="stat-cards">
         <el-col :xs="24" :sm="12" :md="6">
-          <el-card class="stat-card today-reservations">
+          <el-card class="stat-card today-reservations" shadow="hover">
             <div class="stat-content">
               <div class="stat-icon">
                 <el-icon><Calendar /></el-icon>
               </div>
               <div class="stat-info">
-                <div class="stat-number">{{ statistics.todayReservations }}</div>
+                <div class="stat-number">{{ animatedNumbers.todayReservations }}</div>
                 <div class="stat-label">今日预约</div>
               </div>
             </div>
@@ -19,35 +19,37 @@
               <span class="trend-value positive">+12%</span>
               <span class="trend-text">比昨日</span>
             </div>
+            <div class="stat-pattern"></div>
           </el-card>
         </el-col>
         
         <el-col :xs="24" :sm="12" :md="6">
-          <el-card class="stat-card total-seats">
+          <el-card class="stat-card total-seats" shadow="hover">
             <div class="stat-content">
               <div class="stat-icon">
                 <el-icon><Grid /></el-icon>
               </div>
               <div class="stat-info">
-                <div class="stat-number">{{ statistics.totalSeats }}</div>
+                <div class="stat-number">{{ animatedNumbers.totalSeats }}</div>
                 <div class="stat-label">总座位数</div>
               </div>
             </div>
             <div class="stat-trend">
-              <span class="trend-value neutral">{{ statistics.availableSeats }}</span>
+              <span class="trend-value neutral">{{ animatedNumbers.availableSeats }}</span>
               <span class="trend-text">可用座位</span>
             </div>
+            <div class="stat-pattern"></div>
           </el-card>
         </el-col>
         
         <el-col :xs="24" :sm="12" :md="6">
-          <el-card class="stat-card active-users">
+          <el-card class="stat-card active-users" shadow="hover">
             <div class="stat-content">
               <div class="stat-icon">
                 <el-icon><User /></el-icon>
               </div>
               <div class="stat-info">
-                <div class="stat-number">{{ statistics.activeUsers }}</div>
+                <div class="stat-number">{{ animatedNumbers.activeUsers }}</div>
                 <div class="stat-label">活跃用户</div>
               </div>
             </div>
@@ -55,17 +57,18 @@
               <span class="trend-value positive">+8%</span>
               <span class="trend-text">本周增长</span>
             </div>
+            <div class="stat-pattern"></div>
           </el-card>
         </el-col>
         
         <el-col :xs="24" :sm="12" :md="6">
-          <el-card class="stat-card revenue">
+          <el-card class="stat-card revenue" shadow="hover">
             <div class="stat-content">
               <div class="stat-icon">
                 <el-icon><Money /></el-icon>
               </div>
               <div class="stat-info">
-                <div class="stat-number">¥{{ statistics.revenue }}</div>
+                <div class="stat-number">¥{{ animatedNumbers.revenue }}</div>
                 <div class="stat-label">今日收入</div>
               </div>
             </div>
@@ -73,6 +76,7 @@
               <span class="trend-value positive">+15%</span>
               <span class="trend-text">比昨日</span>
             </div>
+            <div class="stat-pattern"></div>
           </el-card>
         </el-col>
       </el-row>
@@ -1071,6 +1075,38 @@ const statistics = reactive({
   revenue: 0
 })
 
+// 动画数字显示
+const animatedNumbers = reactive({
+  todayReservations: 0,
+  totalSeats: 0,
+  availableSeats: 0,
+  activeUsers: 0,
+  revenue: 0
+})
+
+// 数字动画函数
+const animateNumber = (targetValue, currentValue, key, duration = 1000) => {
+  const startTime = performance.now()
+  const startValue = currentValue
+  
+  const animate = (currentTime) => {
+    const elapsed = currentTime - startTime
+    const progress = Math.min(elapsed / duration, 1)
+    
+    // 使用easeOut缓动效果
+    const easeOut = 1 - Math.pow(1 - progress, 3)
+    const value = Math.round(startValue + (targetValue - startValue) * easeOut)
+    
+    animatedNumbers[key] = value
+    
+    if (progress < 1) {
+      requestAnimationFrame(animate)
+    }
+  }
+  
+  requestAnimationFrame(animate)
+}
+
 // 图表相关
 const trendChart = ref(null)
 const pieChart = ref(null)
@@ -1271,12 +1307,28 @@ const getHeatmapClass = (value) => {
 const loadStatistics = async () => {
   try {
     const response = await request.get('/statistics/admin/dashboard')
-    if (response) {
-      statistics.todayReservations = response.todayReservations || 0
-      statistics.totalSeats = response.totalSeats || 0
-      statistics.availableSeats = response.availableSeats || 0
-      statistics.activeUsers = response.activeUsers || 0
-      statistics.revenue = response.revenue || 0
+    console.log('统计数据响应:', response)
+
+    // 处理新的响应格式 {code, message, data}
+    if (response && response.code === 200) {
+      // 更新统计数据并触发动画
+      Object.keys(statistics).forEach(key => {
+        const oldValue = statistics[key]
+        const newValue = response.data[key] || 0
+        statistics[key] = newValue
+
+        // 触发数字动画
+        animateNumber(newValue, animatedNumbers[key], key, 1200)
+      })
+    } else {
+      console.error('统计数据获取失败:', response)
+      ElMessage.error(response.message || '加载统计数据失败')
+      // 使用默认值
+      statistics.todayReservations = 0
+      statistics.totalSeats = 0
+      statistics.availableSeats = 0
+      statistics.activeUsers = 0
+      statistics.revenue = 0
     }
   } catch (error) {
     console.error('加载统计数据失败:', error)
@@ -1301,17 +1353,29 @@ const loadSeats = async () => {
       area: seatFilter.area,
       status: seatFilter.status
     }
-    
+
     const response = await seatApi.getSeatPage(params)
-    seats.value = response.records || []
-    seatTotal.value = response.total || 0
-    
-    // 更新统计数据
-    statistics.totalSeats = seatTotal.value
-    statistics.availableSeats = seats.value.filter(s => s.status === 'AVAILABLE').length
+    console.log('座位数据响应:', response)
+
+    // 处理新的响应格式 {code, message, data}
+    if (response && response.code === 200) {
+      seats.value = response.data.records || []
+      seatTotal.value = response.data.total || 0
+
+      // 更新统计数据
+      statistics.totalSeats = seatTotal.value
+      statistics.availableSeats = seats.value.filter(s => s.status === 'AVAILABLE').length
+    } else {
+      console.error('座位数据获取失败:', response)
+      ElMessage.error(response.message || '加载座位信息失败')
+      seats.value = []
+      seatTotal.value = 0
+    }
   } catch (error) {
     console.error('加载座位信息失败:', error)
     ElMessage.error('加载座位信息失败')
+    seats.value = []
+    seatTotal.value = 0
   } finally {
     seatsLoading.value = false
   }
@@ -1326,19 +1390,31 @@ const loadReservations = async () => {
       size: reservationPageSize.value,
       status: reservationFilter.status
     }
-    
+
     // 处理日期范围
     if (reservationFilter.dateRange && reservationFilter.dateRange.length === 2) {
       params.startDate = reservationFilter.dateRange[0].toISOString().split('T')[0]
       params.endDate = reservationFilter.dateRange[1].toISOString().split('T')[0]
     }
-    
+
     const response = await reservationApi.getAdminReservations(params)
-    reservations.value = response.records || []
-    reservationTotal.value = response.total || 0
+    console.log('预约数据响应:', response)
+
+    // 处理新的响应格式 {code, message, data}
+    if (response && response.code === 200) {
+      reservations.value = response.data.records || []
+      reservationTotal.value = response.data.total || 0
+    } else {
+      console.error('预约数据获取失败:', response)
+      ElMessage.error(response.message || '加载预约记录失败')
+      reservations.value = []
+      reservationTotal.value = 0
+    }
   } catch (error) {
     console.error('加载预约记录失败:', error)
     ElMessage.error('加载预约记录失败')
+    reservations.value = []
+    reservationTotal.value = 0
   } finally {
     reservationsLoading.value = false
   }
@@ -1492,13 +1568,25 @@ const loadUsers = async () => {
       status: userFilter.status,
       keyword: userFilter.keyword
     }
-    
+
     const response = await userApi.getUserList(params)
-    users.value = response.records || []
-    userTotal.value = response.total || 0
+    console.log('用户数据响应:', response)
+
+    // 处理新的响应格式 {code, message, data}
+    if (response && response.code === 200) {
+      users.value = response.data.records || []
+      userTotal.value = response.data.total || 0
+    } else {
+      console.error('用户数据获取失败:', response)
+      ElMessage.error(response.message || '加载用户列表失败')
+      users.value = []
+      userTotal.value = 0
+    }
   } catch (error) {
     console.error('加载用户列表失败:', error)
     ElMessage.error('加载用户列表失败')
+    users.value = []
+    userTotal.value = 0
   } finally {
     usersLoading.value = false
   }
@@ -1777,9 +1865,36 @@ const loadReportStats = async () => {
       request.get('/statistics/admin/user-activity')
     ])
     
-    reportStats.totalReservations = reservationTrend?.totalReservations || 0
-    reportStats.seatUtilization = seatUsage?.averageUtilization || 0
-    reportStats.activeUserRate = userActivity?.activeUserRate || 0
+    // 处理预约趋势数据
+    const trendData = reservationTrend.data?.trend || []
+    let totalReservations = 0
+    trendData.forEach(item => totalReservations += item.count)
+    
+    // 处理座位使用率数据
+    const seatTypeUsage = seatUsage.data?.seatTypeUsage || []
+    let totalSeats = 0
+    let totalUsed = 0
+    seatTypeUsage.forEach(item => {
+      totalSeats += item.total
+      totalUsed += item.used
+    })
+    const seatUtilization = totalSeats > 0 ? Math.round((totalUsed / totalSeats) * 100) : 0
+    
+    // 处理用户活跃度数据
+    const userActivityData = userActivity.data || {}
+    const activeUserRate = userActivityData.totalUsers > 0 
+      ? Math.round((userActivityData.activeUsers / userActivityData.totalUsers) * 100) 
+      : 0
+    
+    // 更新统计数据
+    reportStats.totalReservations = totalReservations
+    reportStats.seatUtilization = seatUtilization
+    reportStats.activeUserRate = activeUserRate
+    
+    // 绘制图表
+    await nextTick()
+    drawReportCharts(trendData, seatTypeUsage)
+    
   } catch (error) {
     console.error('加载报表统计失败:', error)
     ElMessage.error('加载报表统计失败')
@@ -1788,6 +1903,115 @@ const loadReportStats = async () => {
 
 const exportReports = () => {
   ElMessage.info('报表导出功能开发中...')
+}
+
+// 绘制报表图表
+const drawReportCharts = (trendData, seatTypeUsage) => {
+  // 绘制预约趋势图表
+  const trendChart = document.getElementById('reservation-trend-chart')
+  if (trendChart) {
+    const canvas = document.createElement('canvas')
+    trendChart.innerHTML = ''
+    trendChart.appendChild(canvas)
+    
+    const ctx = canvas.getContext('2d')
+    canvas.width = trendChart.offsetWidth
+    canvas.height = 300
+    
+    // 简单的折线图绘制
+    const padding = 40
+    const chartWidth = canvas.width - 2 * padding
+    const chartHeight = canvas.height - 2 * padding
+    
+    if (trendData.length > 0) {
+      const maxCount = Math.max(...trendData.map(d => d.count))
+      const stepX = chartWidth / (trendData.length - 1)
+      
+      // 绘制坐标轴
+      ctx.strokeStyle = '#e5e7eb'
+      ctx.lineWidth = 1
+      ctx.beginPath()
+      ctx.moveTo(padding, padding)
+      ctx.lineTo(padding, padding + chartHeight)
+      ctx.lineTo(padding + chartWidth, padding + chartHeight)
+      ctx.stroke()
+      
+      // 绘制数据线
+      ctx.strokeStyle = '#059669'
+      ctx.lineWidth = 2
+      ctx.beginPath()
+      
+      trendData.forEach((data, index) => {
+        const x = padding + index * stepX
+        const y = padding + chartHeight - (data.count / maxCount) * chartHeight
+        
+        if (index === 0) {
+          ctx.moveTo(x, y)
+        } else {
+          ctx.lineTo(x, y)
+        }
+        
+        // 绘制数据点
+        ctx.fillStyle = '#059669'
+        ctx.beginPath()
+        ctx.arc(x, y, 4, 0, 2 * Math.PI)
+        ctx.fill()
+      })
+      ctx.stroke()
+      
+      // 绘制标签
+      ctx.fillStyle = '#6b7280'
+      ctx.font = '12px sans-serif'
+      ctx.textAlign = 'center'
+      trendData.forEach((data, index) => {
+        const x = padding + index * stepX
+        ctx.fillText(data.date, x, canvas.height - 10)
+      })
+    }
+  }
+  
+  // 绘制座位使用率饼图
+  const usageChart = document.getElementById('seat-usage-chart')
+  if (usageChart && seatTypeUsage.length > 0) {
+    const canvas = document.createElement('canvas')
+    usageChart.innerHTML = ''
+    usageChart.appendChild(canvas)
+    
+    const ctx = canvas.getContext('2d')
+    canvas.width = usageChart.offsetWidth
+    canvas.height = 300
+    
+    const centerX = canvas.width / 2
+    const centerY = canvas.height / 2
+    const radius = Math.min(centerX, centerY) - 40
+    
+    const colors = ['#059669', '#10b981', '#34d399', '#6ee7b7', '#a7f3d0']
+    let currentAngle = 0
+    
+    seatTypeUsage.forEach((usage, index) => {
+      const sliceAngle = (usage.usageRate / 100) * 2 * Math.PI
+      
+      ctx.fillStyle = colors[index % colors.length]
+      ctx.beginPath()
+      ctx.moveTo(centerX, centerY)
+      ctx.arc(centerX, centerY, radius, currentAngle, currentAngle + sliceAngle)
+      ctx.closePath()
+      ctx.fill()
+      
+      // 绘制标签
+      const labelAngle = currentAngle + sliceAngle / 2
+      const labelX = centerX + Math.cos(labelAngle) * (radius + 20)
+      const labelY = centerY + Math.sin(labelAngle) * (radius + 20)
+      
+      ctx.fillStyle = '#374151'
+      ctx.font = '12px sans-serif'
+      ctx.textAlign = 'center'
+      ctx.fillText(`${usage.typeName}`, labelX, labelY)
+      ctx.fillText(`${usage.usageRate}%`, labelX, labelY + 15)
+      
+      currentAngle += sliceAngle
+    })
+  }
 }
 
 // 公告管理相关方法
@@ -1800,13 +2024,25 @@ const loadAnnouncements = async () => {
       status: announcementFilter.status,
       type: announcementFilter.type
     }
-    
+
     const response = await request.get('/announcement/admin/list', { params })
-    announcements.value = response.records || []
-    announcementTotal.value = response.total || 0
+    console.log('公告数据响应:', response)
+
+    // 处理新的响应格式 {code, message, data}
+    if (response && response.code === 200) {
+      announcements.value = response.data.records || []
+      announcementTotal.value = response.data.total || 0
+    } else {
+      console.error('公告数据获取失败:', response)
+      ElMessage.error(response.message || '加载公告列表失败')
+      announcements.value = []
+      announcementTotal.value = 0
+    }
   } catch (error) {
     console.error('加载公告列表失败:', error)
     ElMessage.error('加载公告列表失败')
+    announcements.value = []
+    announcementTotal.value = 0
   } finally {
     announcementsLoading.value = false
   }

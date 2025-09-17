@@ -3,7 +3,13 @@
     <div class="profile">
       <el-row :gutter="20">
         <el-col :span="8">
-          <el-card>
+          <!-- 钱包卡片 -->
+          <el-card class="wallet-card">
+            <WalletBalance />
+          </el-card>
+          
+          <!-- 用户信息卡片 -->
+          <el-card style="margin-top: 20px;">
             <div class="user-avatar">
               <div class="avatar-container">
                 <el-avatar 
@@ -153,6 +159,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { UserFilled, Camera } from '@element-plus/icons-vue'
 import Layout from '@/components/Layout.vue'
+import WalletBalance from '@/components/WalletBalance.vue'
 import { useUserStore } from '@/stores/user'
 
 const userStore = useUserStore()
