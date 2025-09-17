@@ -67,7 +67,7 @@
 
               <div class="card-actions">
                 <el-button
-                  v-if="reservation.status === 'PENDING' || reservation.status === 'UNPAID'"
+                  v-if="reservation.status === 'UNPAID'"
                   type="primary"
                   size="small"
                   @click="handlePayment(reservation)"
@@ -76,10 +76,11 @@
                 </el-button>
                 
                 <el-button
-                  v-if="reservation.status === 'PENDING' || reservation.status === 'UNPAID' || reservation.status === 'RESERVED'"
+                  v-if="reservation.canCancel"
                   type="danger"
                   size="small"
                   plain
+                  :loading="actionLoading && actionReservationId === reservation.id && actionType === 'cancel'"
                   @click="handleCancel(reservation)"
                 >
                   取消预约
@@ -89,6 +90,7 @@
                   v-if="reservation.canCheckIn"
                   type="success"
                   size="small"
+                  :loading="actionLoading && actionReservationId === reservation.id && actionType === 'checkin'"
                   @click="handleCheckIn(reservation)"
                 >
                   签到
@@ -98,6 +100,7 @@
                   v-if="reservation.canCheckOut"
                   type="warning"
                   size="small"
+                  :loading="actionLoading && actionReservationId === reservation.id && actionType === 'checkout'"
                   @click="handleCheckOut(reservation)"
                 >
                   签退
@@ -235,31 +238,29 @@ const showDetailDialog = ref(false)
 const selectedReservation = ref(null)
 const showPaymentDialog = ref(false)
 const paymentReservation = ref(null)
+const actionLoading = ref(false)
+const actionReservationId = ref(null)
+const actionType = ref('')
 
 const statusTextMap = {
-  'PENDING': '待支付',
   'UNPAID': '未支付',
   'RESERVED': '已预约',
-  'CHECKED_IN': '已签到',
+  'USING': '使用中',
   'COMPLETED': '已完成',
   'CANCELLED': '已取消',
-  'active': '已预约',
-  'checked_in': '已签到',
-  'completed': '已完成',
-  'cancelled': '已取消'
+  // 兼容可能出现的历史状态
+  'PENDING': '待支付',
+  'ACTIVE': '已预约'
 }
 
 const statusTypeMap = {
-  'PENDING': 'warning',
   'UNPAID': 'danger',
   'RESERVED': 'primary',
-  'CHECKED_IN': 'success',
+  'USING': 'success',
   'COMPLETED': 'info',
   'CANCELLED': 'danger',
-  'active': 'primary',
-  'checked_in': 'success',
-  'completed': 'info',
-  'cancelled': 'danger'
+  'PENDING': 'warning',
+  'ACTIVE': 'primary'
 }
 
 const getStatusText = (status) => {
@@ -322,6 +323,9 @@ const handlePaymentError = (error) => {
 
 const handleCancel = async (reservation) => {
   try {
+    actionLoading.value = true
+    actionReservationId.value = reservation.id
+    actionType.value = 'cancel'
     await ElMessageBox.confirm(
       '确定要取消这个预约吗？取消后将无法恢复。',
       '确认取消',
@@ -333,23 +337,34 @@ const handleCancel = async (reservation) => {
     )
     
     await reservationApi.cancelReservation(reservation.id)
-    ElMessage.success('预约已取消')
+    ElMessage.success('预约已取消，如已支付费用将自动退回钱包')
     loadReservations()
   } catch (error) {
     if (error !== 'cancel') {
       console.error('取消预约失败:', error)
       ElMessage.error('取消预约失败')
     }
+  } finally {
+    actionLoading.value = false
+    actionReservationId.value = null
+    actionType.value = ''
   }
 }
 
 const handleCheckIn = async (reservation) => {
   try {
+    actionLoading.value = true
+    actionReservationId.value = reservation.id
+    actionType.value = 'checkin'
     await reservationApi.checkIn(reservation.id)
     ElMessage.success('签到成功')
     loadReservations()
   } catch (error) {
     console.error('签到失败:', error)
+  } finally {
+    actionLoading.value = false
+    actionReservationId.value = null
+    actionType.value = ''
   }
 }
 
@@ -365,6 +380,9 @@ const handleCheckOut = async (reservation) => {
       }
     )
     
+    actionLoading.value = true
+    actionReservationId.value = reservation.id
+    actionType.value = 'checkout'
     await reservationApi.checkOut(reservation.id)
     ElMessage.success('签退成功')
     loadReservations()
@@ -372,6 +390,10 @@ const handleCheckOut = async (reservation) => {
     if (error !== 'cancel') {
       console.error('签退失败:', error)
     }
+  } finally {
+    actionLoading.value = false
+    actionReservationId.value = null
+    actionType.value = ''
   }
 }
 
@@ -421,6 +443,7 @@ onMounted(() => {
 .reservation-grid {
   display: grid;
   gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
 }
 
 .reservation-card {

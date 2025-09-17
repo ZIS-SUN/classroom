@@ -9,12 +9,16 @@ import com.seatreservation.entity.Reservation;
 import com.seatreservation.entity.Seat;
 import com.seatreservation.entity.SeatType;
 import com.seatreservation.entity.User;
+import com.seatreservation.entity.PaymentRecord;
 import com.seatreservation.mapper.ReservationMapper;
 import com.seatreservation.mapper.SeatMapper;
 import com.seatreservation.mapper.SeatTypeMapper;
 import com.seatreservation.mapper.UserMapper;
 import com.seatreservation.service.ReservationService;
 import com.seatreservation.vo.ReservationVO;
+import com.seatreservation.mapper.PaymentRecordMapper;
+import com.seatreservation.service.PaymentService;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,6 +48,12 @@ public class ReservationServiceImpl extends ServiceImpl<ReservationMapper, Reser
     @Autowired
     private UserMapper userMapper;
 
+    @Autowired
+    private PaymentRecordMapper paymentRecordMapper;
+
+    @Autowired
+    private PaymentService paymentService;
+
     @Override
     @Transactional
     public ReservationVO createReservation(Long userId, ReservationRequest request) {
@@ -66,7 +76,7 @@ public class ReservationServiceImpl extends ServiceImpl<ReservationMapper, Reser
         LambdaQueryWrapper<Reservation> conflictWrapper = new LambdaQueryWrapper<>();
         conflictWrapper.eq(Reservation::getSeatId, request.getSeatId())
                 .eq(Reservation::getReservationDate, request.getReservationDate())
-                .in(Reservation::getStatus, "RESERVED", "USING")
+                .in(Reservation::getStatus, "UNPAID", "RESERVED", "USING")
                 .and(wrapper -> wrapper
                         .lt(Reservation::getStartTime, request.getEndTime())
                         .gt(Reservation::getEndTime, request.getStartTime()));
@@ -79,7 +89,7 @@ public class ReservationServiceImpl extends ServiceImpl<ReservationMapper, Reser
         LambdaQueryWrapper<Reservation> userConflictWrapper = new LambdaQueryWrapper<>();
         userConflictWrapper.eq(Reservation::getUserId, userId)
                 .eq(Reservation::getReservationDate, request.getReservationDate())
-                .in(Reservation::getStatus, "RESERVED", "USING")
+                .in(Reservation::getStatus, "UNPAID", "RESERVED", "USING")
                 .and(wrapper -> wrapper
                         .lt(Reservation::getStartTime, request.getEndTime())
                         .gt(Reservation::getEndTime, request.getStartTime()));
@@ -106,7 +116,8 @@ public class ReservationServiceImpl extends ServiceImpl<ReservationMapper, Reser
         reservation.setReservationDate(request.getReservationDate());
         reservation.setStartTime(request.getStartTime());
         reservation.setEndTime(request.getEndTime());
-        reservation.setStatus("RESERVED");
+        // 初始状态为未支付，支付成功后转为 RESERVED
+        reservation.setStatus("UNPAID");
         reservation.setTotalFee(totalFee);
         reservation.setRemark(request.getRemark());
         reservation.setCreatedTime(LocalDateTime.now());
@@ -129,7 +140,7 @@ public class ReservationServiceImpl extends ServiceImpl<ReservationMapper, Reser
             throw new RuntimeException("无权限操作该预约");
         }
 
-        if (!"RESERVED".equals(reservation.getStatus())) {
+        if (!"UNPAID".equals(reservation.getStatus()) && !"RESERVED".equals(reservation.getStatus())) {
             throw new RuntimeException("预约状态无法取消");
         }
 
@@ -142,6 +153,23 @@ public class ReservationServiceImpl extends ServiceImpl<ReservationMapper, Reser
         
         if (LocalDateTime.now().isAfter(cancelDeadline)) {
             throw new RuntimeException("预约开始前30分钟内不能取消");
+        }
+
+        // 如已支付则自动退款
+        if ("RESERVED".equals(reservation.getStatus())) {
+            QueryWrapper<PaymentRecord> query = new QueryWrapper<>();
+            query.eq("reservation_id", reservationId)
+                 .eq("payment_status", "SUCCESS")
+                 .orderByDesc("created_time")
+                 .last("limit 1");
+            PaymentRecord record = paymentRecordMapper.selectOne(query);
+            if (record != null && reservation.getTotalFee() != null) {
+                try {
+                    paymentService.refund(record.getOrderNo(), reservation.getTotalFee(), "用户取消预约自动退款");
+                } catch (Exception ex) {
+                    log.error("取消预约退款失败: reservationId={}, error={}", reservationId, ex.getMessage());
+                }
+            }
         }
 
         reservation.setStatus("CANCELLED");
@@ -296,12 +324,13 @@ public class ReservationServiceImpl extends ServiceImpl<ReservationMapper, Reser
         LocalDateTime reservationStart = LocalDateTime.of(reservation.getReservationDate(), reservation.getStartTime());
         LocalDateTime reservationEnd = LocalDateTime.of(reservation.getReservationDate(), reservation.getEndTime());
         
-        // 是否可以取消
-        boolean canCancel = "RESERVED".equals(reservation.getStatus()) && 
-                           now.isBefore(reservationStart.minusMinutes(30));
+        // 是否可以取消（未支付或已支付且未到开始前30分钟）
+        boolean canCancel = ("UNPAID".equals(reservation.getStatus()) ||
+                            "RESERVED".equals(reservation.getStatus())) &&
+                            now.isBefore(reservationStart.minusMinutes(30));
         vo.setCanCancel(canCancel);
 
-        // 是否可以签到
+        // 是否可以签到（仅已支付预定可签到）
         boolean canCheckIn = "RESERVED".equals(reservation.getStatus()) && 
                             now.isAfter(reservationStart.minusMinutes(15)) && 
                             now.isBefore(reservationStart.plusMinutes(30));

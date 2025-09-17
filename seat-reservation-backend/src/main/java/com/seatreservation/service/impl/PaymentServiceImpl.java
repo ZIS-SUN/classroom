@@ -119,8 +119,8 @@ public class PaymentServiceImpl implements PaymentService {
                 record.setUpdatedTime(LocalDateTime.now());
                 paymentRecordMapper.updateById(record);
                 
-                // 更新预约状态
-                updateReservationStatus(record.getReservationId(), "ACTIVE", "PAID");
+                // 更新预约状态：支付成功 -> RESERVED
+                updateReservationStatus(record.getReservationId(), "RESERVED", "PAID");
                 
                 result.put("success", true);
                 result.put("message", "支付成功");
@@ -186,8 +186,8 @@ public class PaymentServiceImpl implements PaymentService {
         record.setUpdatedTime(LocalDateTime.now());
         paymentRecordMapper.updateById(record);
         
-        // 更新预约状态
-        updateReservationStatus(record.getReservationId(), "ACTIVE", "PAID");
+        // 更新预约状态：支付成功 -> RESERVED
+        updateReservationStatus(record.getReservationId(), "RESERVED", "PAID");
         
         log.info("支付成功: orderNo={}, thirdPartyOrderNo={}", orderNo, thirdPartyOrderNo);
         return true;
@@ -387,6 +387,7 @@ public class PaymentServiceImpl implements PaymentService {
             Reservation reservation = reservationMapper.selectById(reservationId);
             if (reservation != null) {
                 reservation.setStatus(status);
+                reservation.setUpdatedTime(LocalDateTime.now());
                 reservationMapper.updateById(reservation);
             }
         } catch (Exception e) {
