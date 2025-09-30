@@ -1,16 +1,23 @@
 -- ========================================
--- 自习室座位预约系统 - 完整数据库初始化脚本
--- 版本：1.0
--- 包含所有表结构、外键关系、索引和基础数据
+-- 自习室座位预约系统 - 统一数据库初始化脚本
+-- 版本：2.0
+-- 功能：完整的数据库结构 + 扩展功能 + 测试数据
+-- 使用方法：mysql -u root -p < init_database.sql
 -- ========================================
 
--- 创建数据库
+-- ========================================
+-- 第一部分：数据库创建
+-- ========================================
+
+-- 删除已存在的数据库（谨慎使用）
 DROP DATABASE IF EXISTS seat_reservation;
+
+-- 创建数据库，使用UTF8MB4字符集
 CREATE DATABASE seat_reservation CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE seat_reservation;
 
 -- ========================================
--- 表结构创建
+-- 第二部分：核心数据表创建
 -- ========================================
 
 -- 1. 用户表
@@ -99,6 +106,10 @@ CREATE TABLE operation_log (
     FOREIGN KEY (user_id) REFERENCES sys_user(id)
 ) COMMENT='操作日志表';
 
+-- ========================================
+-- 第三部分：支付相关表
+-- ========================================
+
 -- 7. 用户钱包表
 CREATE TABLE user_wallet (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -146,6 +157,10 @@ CREATE TABLE payment_record (
     FOREIGN KEY (reservation_id) REFERENCES reservation(id) ON DELETE CASCADE
 ) COMMENT='支付记录表';
 
+-- ========================================
+-- 第四部分：扩展功能表
+-- ========================================
+
 -- 10. 座位收藏表
 CREATE TABLE seat_favorite (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -189,8 +204,50 @@ CREATE TABLE system_settings (
     UNIQUE KEY uk_setting_key_type (setting_key, setting_type)
 ) COMMENT='系统设置表';
 
+-- 13. 自习室表（用于多自习室管理）
+CREATE TABLE study_room (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '自习室ID',
+    room_name VARCHAR(100) NOT NULL COMMENT '自习室名称',
+    room_number VARCHAR(50) NOT NULL COMMENT '自习室编号',
+    floor_number INT NOT NULL COMMENT '楼层',
+    description TEXT COMMENT '自习室描述',
+    image_url VARCHAR(500) COMMENT '自习室图片URL',
+    capacity INT DEFAULT 0 COMMENT '容量',
+    status VARCHAR(20) DEFAULT 'AVAILABLE' COMMENT '状态：AVAILABLE-可用, MAINTENANCE-维护中, DISABLED-禁用',
+    created_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
+) COMMENT='自习室表';
+
+-- 14. 意见反馈表
+CREATE TABLE feedback (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '反馈ID',
+    user_id BIGINT NOT NULL COMMENT '用户ID',
+    type VARCHAR(20) NOT NULL COMMENT '反馈类型：SUGGESTION-建议, BUG-问题, COMPLAINT-投诉, OTHER-其他',
+    content TEXT NOT NULL COMMENT '反馈内容',
+    reply TEXT COMMENT '管理员回复',
+    status VARCHAR(20) DEFAULT 'PENDING' COMMENT '状态：PENDING-待处理, REPLIED-已回复, CLOSED-已关闭',
+    created_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    replied_time TIMESTAMP NULL COMMENT '回复时间',
+    replied_by BIGINT COMMENT '回复者ID',
+    FOREIGN KEY (user_id) REFERENCES sys_user(id) ON DELETE CASCADE
+) COMMENT='意见反馈表';
+
+-- 15. 消息通知表
+CREATE TABLE notification (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '通知ID',
+    user_id BIGINT NOT NULL COMMENT '用户ID',
+    title VARCHAR(200) NOT NULL COMMENT '通知标题',
+    content TEXT NOT NULL COMMENT '通知内容',
+    type VARCHAR(20) NOT NULL COMMENT '通知类型：RESERVATION-预约相关, SYSTEM-系统通知, ANNOUNCEMENT-公告',
+    is_read BOOLEAN DEFAULT FALSE COMMENT '是否已读',
+    created_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    read_time TIMESTAMP NULL COMMENT '阅读时间',
+    FOREIGN KEY (user_id) REFERENCES sys_user(id) ON DELETE CASCADE
+) COMMENT='消息通知表';
+
 -- ========================================
--- 创建索引优化查询性能
+-- 第五部分：数据库索引优化
 -- ========================================
 
 -- 用户表索引
@@ -212,7 +269,7 @@ CREATE INDEX idx_reservation_date ON reservation(reservation_date);
 CREATE INDEX idx_reservation_status ON reservation(status);
 CREATE INDEX idx_reservation_datetime ON reservation(reservation_date, start_time, end_time);
 
--- 支付相关索引
+-- 钱包和支付索引
 CREATE INDEX idx_user_wallet_user_id ON user_wallet(user_id);
 CREATE INDEX idx_recharge_user_id ON recharge_record(user_id);
 CREATE INDEX idx_recharge_order_no ON recharge_record(order_no);
@@ -239,8 +296,19 @@ CREATE INDEX idx_setting_type ON system_settings(setting_type);
 CREATE INDEX idx_operation_log_user ON operation_log(user_id);
 CREATE INDEX idx_operation_log_time ON operation_log(created_time);
 
+-- 反馈表索引
+CREATE INDEX idx_feedback_user_id ON feedback(user_id);
+CREATE INDEX idx_feedback_status ON feedback(status);
+CREATE INDEX idx_feedback_type ON feedback(type);
+
+-- 通知表索引
+CREATE INDEX idx_notification_user_id ON notification(user_id);
+CREATE INDEX idx_notification_is_read ON notification(is_read);
+CREATE INDEX idx_notification_type ON notification(type);
+CREATE INDEX idx_notification_created_time ON notification(created_time);
+
 -- ========================================
--- 基础数据插入
+-- 第六部分：基础数据初始化
 -- ========================================
 
 -- 1. 插入座位类型数据
@@ -250,21 +318,23 @@ INSERT INTO seat_type (type_name, description, hourly_rate) VALUES
 ('独立包间', '安静的独立学习包间', 3.00),
 ('电脑座位', '配备电脑的学习座位', 2.00);
 
--- 2. 插入管理员和测试用户（密码使用BCrypt加密）
--- 管理员密码: admin123
-INSERT INTO sys_user (username, password, real_name, phone, email, role) VALUES
-('admin', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVEIUi', '系统管理员', '13800138000', 'admin@example.com', 'ADMIN');
+-- 2. 插入管理员和测试用户
+-- 管理员账号：admin / admin123
+-- BCrypt加密密码: $2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVEIUi
+INSERT INTO sys_user (username, password, real_name, phone, email, role, status) VALUES
+('admin', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVEIUi', '系统管理员', '13800138000', 'admin@example.com', 'ADMIN', 'ACTIVE');
 
--- 测试学生账号密码: 123456
-INSERT INTO sys_user (username, password, real_name, phone, email, student_id, role) VALUES
-('student001', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.', '张三', '13900139001', 'zhangsan@example.com', '2021001001', 'STUDENT'),
-('student002', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.', '李四', '13900139002', 'lisi@example.com', '2021001002', 'STUDENT'),
-('student003', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.', '王五', '13900139003', 'wangwu@example.com', '2021001003', 'STUDENT'),
-('student004', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.', '赵六', '13900139004', 'zhaoliu@example.com', '2021001004', 'STUDENT'),
-('student005', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.', '钱七', '13900139005', 'qianqi@example.com', '2021001005', 'STUDENT');
+-- 学生测试账号：student001-005 / 123456
+-- BCrypt加密密码: $2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.
+INSERT INTO sys_user (username, password, real_name, phone, email, student_id, role, status) VALUES
+('student001', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.', '张三', '13900139001', 'zhangsan@example.com', '2021001001', 'STUDENT', 'ACTIVE'),
+('student002', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.', '李四', '13900139002', 'lisi@example.com', '2021001002', 'STUDENT', 'ACTIVE'),
+('student003', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.', '王五', '13900139003', 'wangwu@example.com', '2021001003', 'STUDENT', 'ACTIVE'),
+('student004', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.', '赵六', '13900139004', 'zhaoliu@example.com', '2021001004', 'STUDENT', 'ACTIVE'),
+('student005', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.', '钱七', '13900139005', 'qianqi@example.com', '2021001005', 'STUDENT', 'ACTIVE');
 
 -- 3. 插入座位数据（2楼A区和B区共60个座位）
--- A区座位 (1-30)
+-- A区座位 (1-30号)
 INSERT INTO seat (seat_number, floor_number, area, seat_type_id, position_x, position_y, has_power, has_computer) VALUES
 -- A区第一排 (1-10号)
 ('A001', 2, 'A区', 1, 50, 50, TRUE, FALSE),
@@ -302,7 +372,7 @@ INSERT INTO seat (seat_number, floor_number, area, seat_type_id, position_x, pos
 ('A029', 2, 'A区', 1, 450, 250, TRUE, FALSE),
 ('A030', 2, 'A区', 1, 500, 250, TRUE, FALSE),
 
--- B区座位 (31-60)
+-- B区座位 (31-60号)
 ('B001', 2, 'B区', 1, 600, 50, TRUE, FALSE),
 ('B002', 2, 'B区', 1, 650, 50, TRUE, FALSE),
 ('B003', 2, 'B区', 2, 700, 50, TRUE, FALSE),  -- 靠窗
@@ -422,7 +492,7 @@ INSERT INTO system_settings (setting_key, setting_value, setting_type, descripti
 ('enableIPWhitelist', 'false', 'security', 'IP白名单模式'),
 ('allowedIPs', '""', 'security', '允许的IP地址');
 
--- 8. 插入一些测试座位收藏
+-- 8. 插入测试座位收藏
 INSERT INTO seat_favorite (user_id, seat_id, favorite_name) VALUES
 (2, 3, '我的靠窗位置'),
 (2, 5, '常用电脑座位'),
@@ -430,11 +500,23 @@ INSERT INTO seat_favorite (user_id, seat_id, favorite_name) VALUES
 (4, 8, '靠窗学习位'),
 (5, 15, '电脑编程位');
 
+-- 9. 插入测试充值记录
+INSERT INTO recharge_record (user_id, order_no, amount, bonus_amount, payment_method, payment_status, third_party_order_no, created_time) VALUES
+(2, 'RCH202409130001', 100.00, 0.00, 'WECHAT', 'SUCCESS', 'WX2024091312345678901', DATE_SUB(NOW(), INTERVAL 7 DAY)),
+(3, 'RCH202409130002', 100.00, 0.00, 'ALIPAY', 'SUCCESS', 'ALI2024091312345678901', DATE_SUB(NOW(), INTERVAL 5 DAY)),
+(4, 'RCH202409130003', 50.00, 0.00, 'WECHAT', 'SUCCESS', 'WX2024091312345678902', DATE_SUB(NOW(), INTERVAL 3 DAY));
+
+-- 10. 插入示例自习室数据
+INSERT INTO study_room (room_name, room_number, floor_number, description, capacity, status) VALUES
+('A区自习室', 'A-201', 2, '安静的学习环境，配备空调和饮水机', 30, 'AVAILABLE'),
+('B区自习室', 'B-201', 2, '宽敞明亮，适合长时间学习', 30, 'AVAILABLE'),
+('C区电脑室', 'C-301', 3, '配备高性能电脑，适合编程学习', 20, 'AVAILABLE');
+
 -- ========================================
--- 数据完整性检查和总结
+-- 第七部分：数据验证和总结
 -- ========================================
 
--- 验证数据插入
+-- 显示数据初始化统计
 SELECT
     '数据初始化完成' as status,
     (SELECT COUNT(*) FROM sys_user) as user_count,
@@ -443,15 +525,19 @@ SELECT
     (SELECT COUNT(*) FROM user_wallet) as wallet_count,
     (SELECT COUNT(*) FROM sys_announcement) as announcement_count,
     (SELECT COUNT(*) FROM system_settings) as settings_count,
-    (SELECT COUNT(*) FROM seat_favorite) as favorite_count;
+    (SELECT COUNT(*) FROM seat_favorite) as favorite_count,
+    (SELECT COUNT(*) FROM study_room) as study_room_count;
 
--- 显示主要账号信息
+-- 显示主要测试账号信息
 SELECT
-    username,
-    real_name,
-    role,
-    email,
-    '密码见注释' as password_hint
+    username AS '用户名',
+    real_name AS '姓名',
+    role AS '角色',
+    email AS '邮箱',
+    CASE
+        WHEN username = 'admin' THEN 'admin123'
+        ELSE '123456'
+    END AS '密码'
 FROM sys_user
 ORDER BY role DESC, id;
 
@@ -461,27 +547,57 @@ COMMIT;
 -- 使用说明
 -- ========================================
 --
--- 本脚本包含完整的自习室座位预约系统数据库结构：
+-- 本脚本包含完整的自习室座位预约系统数据库：
 --
--- 1. 12个核心数据表，包含完整的外键关系
--- 2. 优化的数据库索引，提高查询性能
--- 3. 基础测试数据：
---    - 管理员账号: admin / admin123
---    - 学生账号: student001-005 / 123456
---    - 60个座位（A区30个 + B区30个）
---    - 4种座位类型（普通/靠窗/包间/电脑）
---    - 用户钱包和收藏数据
---    - 系统配置和公告
+-- 【核心表结构】
+-- 1. sys_user           - 用户表（学生和管理员）
+-- 2. seat_type          - 座位类型表（普通/靠窗/包间/电脑）
+-- 3. seat               - 座位表（60个座位：A区30个 + B区30个）
+-- 4. reservation        - 预约表
+-- 5. sys_config         - 系统配置表
+-- 6. operation_log      - 操作日志表
 --
--- 4. 支持的功能：
---    - 用户认证和权限管理
---    - 座位预约和管理
---    - 支付和钱包系统
---    - 座位收藏功能
---    - 系统公告和设置
---    - 操作日志记录
+-- 【支付系统】
+-- 7. user_wallet        - 用户钱包表
+-- 8. recharge_record    - 充值记录表
+-- 9. payment_record     - 支付记录表
 --
--- 导入方法：
--- mysql -u root -p < complete_database_init.sql
+-- 【扩展功能】
+-- 10. seat_favorite     - 座位收藏表
+-- 11. sys_announcement  - 系统公告表
+-- 12. system_settings   - 系统设置表
+-- 13. study_room        - 自习室表
+-- 14. feedback          - 意见反馈表
+-- 15. notification      - 消息通知表
+--
+-- 【测试账号】
+-- 管理员：admin / admin123
+-- 学生1：student001 / 123456
+-- 学生2：student002 / 123456
+-- 学生3：student003 / 123456
+-- 学生4：student004 / 123456
+-- 学生5：student005 / 123456
+--
+-- 【测试数据】
+-- - 4种座位类型
+-- - 60个座位（2楼A区和B区）
+-- - 6个用户（1个管理员 + 5个学生）
+-- - 所有用户都有钱包账户
+-- - 5条座位收藏记录
+-- - 3条系统公告
+-- - 完整的系统设置配置
+-- - 3个自习室信息
+--
+-- 【导入方法】
+-- Windows CMD:
+--   cd /d C:\path\to\database
+--   mysql -u root -p < init_database.sql
+--
+-- Mac/Linux Terminal:
+--   cd /path/to/database
+--   mysql -u root -p < init_database.sql
+--
+-- 或在MySQL命令行中：
+--   SOURCE /path/to/init_database.sql;
 --
 -- ========================================

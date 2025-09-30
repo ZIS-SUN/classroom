@@ -365,7 +365,7 @@ const publishAnnouncement = async (announcement) => {
     await ElMessageBox.confirm(`确定要发布公告"${announcement.title}"吗？`)
 
     console.log('正在发布公告:', announcement.id)
-    const response = await request.put(`/announcement/admin/${announcement.id}/publish`)
+    const response = await request.post(`/announcement/admin/${announcement.id}/publish`)
     console.log('发布公告响应:', response)
 
     ElMessage.success('公告发布成功')
