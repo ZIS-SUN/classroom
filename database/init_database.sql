@@ -183,7 +183,7 @@ CREATE TABLE sys_announcement (
     status VARCHAR(20) NOT NULL DEFAULT 'DRAFT' COMMENT '公告状态：DRAFT-草稿, PUBLISHED-已发布, ARCHIVED-已归档',
     author_id BIGINT NOT NULL COMMENT '作者ID',
     author_name VARCHAR(50) NOT NULL COMMENT '作者姓名',
-    priority INT NOT NULL DEFAULT 2 COMMENT '优先级：1-低, 2-中, 3-高',
+    priority VARCHAR(20) NOT NULL DEFAULT 'MEDIUM' COMMENT '优先级：LOW-低, MEDIUM-中, HIGH-高',
     publish_time TIMESTAMP NULL COMMENT '发布时间',
     expire_time TIMESTAMP NULL COMMENT '过期时间',
     view_count INT NOT NULL DEFAULT 0 COMMENT '浏览次数',
@@ -320,9 +320,9 @@ INSERT INTO seat_type (type_name, description, hourly_rate) VALUES
 
 -- 2. 插入管理员和测试用户
 -- 管理员账号：admin / admin123
--- BCrypt加密密码: $2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVEIUi
+-- BCrypt加密密码: $2a$10$aj0.DKdRT7r3VCJCjkJC8OKpbImydBgQe9ACXj1p3/eKYk0dk0Tta
 INSERT INTO sys_user (username, password, real_name, phone, email, role, status) VALUES
-('admin', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVEIUi', '系统管理员', '13800138000', 'admin@example.com', 'ADMIN', 'ACTIVE');
+('admin', '$2a$10$aj0.DKdRT7r3VCJCjkJC8OKpbImydBgQe9ACXj1p3/eKYk0dk0Tta', '系统管理员', '13800138000', 'admin@example.com', 'ADMIN', 'ACTIVE');
 
 -- 学生测试账号：student001-005 / 123456
 -- BCrypt加密密码: $2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.
@@ -434,9 +434,9 @@ FROM sys_user;
 
 -- 6. 插入示例公告
 INSERT INTO sys_announcement (title, content, type, status, author_id, author_name, priority, publish_time, expire_time, view_count) VALUES
-('自习室座位预约系统正式上线', '亲爱的同学们，自习室座位预约系统已正式上线运行。大家可以通过系统提前预约座位，避免到馆后无座位的困扰。请合理使用预约功能，共同维护良好的学习环境。', 'ANNOUNCEMENT', 'PUBLISHED', 1, '系统管理员', 3, NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY), 0),
-('预约座位使用须知', '请各位同学注意：\n1. 预约后请按时到达，超过30分钟未签到将自动取消预约\n2. 离开座位超过2小时请记得签退\n3. 保持座位整洁，文明用座\n4. 如需取消预约，请提前在系统中操作', 'NOTICE', 'PUBLISHED', 1, '系统管理员', 2, NOW(), NULL, 0),
-('系统功能介绍', '系统主要功能包括：\n- 实时座位状态查看\n- 在线座位预约\n- 钱包充值和支付\n- 座位收藏功能\n- 预约历史查询\n- 个人资料管理\n请大家充分利用这些功能，提高学习效率！', 'NOTICE', 'PUBLISHED', 1, '系统管理员', 1, NOW(), NULL, 0);
+('自习室座位预约系统正式上线', '亲爱的同学们，自习室座位预约系统已正式上线运行。大家可以通过系统提前预约座位，避免到馆后无座位的困扰。请合理使用预约功能，共同维护良好的学习环境。', 'ANNOUNCEMENT', 'PUBLISHED', 1, '系统管理员', 'HIGH', NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY), 0),
+('预约座位使用须知', '请各位同学注意：\n1. 预约后请按时到达，超过30分钟未签到将自动取消预约\n2. 离开座位超过2小时请记得签退\n3. 保持座位整洁，文明用座\n4. 如需取消预约，请提前在系统中操作', 'NOTICE', 'PUBLISHED', 1, '系统管理员', 'MEDIUM', NOW(), NULL, 0),
+('系统功能介绍', '系统主要功能包括：\n- 实时座位状态查看\n- 在线座位预约\n- 钱包充值和支付\n- 座位收藏功能\n- 预约历史查询\n- 个人资料管理\n请大家充分利用这些功能，提高学习效率！', 'NOTICE', 'PUBLISHED', 1, '系统管理员', 'LOW', NOW(), NULL, 0);
 
 -- 7. 插入系统设置（详细配置）
 INSERT INTO system_settings (setting_key, setting_value, setting_type, description) VALUES
@@ -512,8 +512,269 @@ INSERT INTO study_room (room_name, room_number, floor_number, description, capac
 ('B区自习室', 'B-201', 2, '宽敞明亮，适合长时间学习', 30, 'AVAILABLE'),
 ('C区电脑室', 'C-301', 3, '配备高性能电脑，适合编程学习', 20, 'AVAILABLE');
 
+-- 11. 插入测试预约记录（覆盖多种状态和时间段）
+-- 过去30天的预约记录
+INSERT INTO reservation (user_id, seat_id, reservation_date, start_time, end_time, status, check_in_time, check_out_time, total_fee, created_time) VALUES
+-- 已完成的预约（30天前到7天前）
+(2, 1, DATE_SUB(CURDATE(), INTERVAL 30 DAY), '09:00:00', '12:00:00', 'COMPLETED', DATE_SUB(NOW(), INTERVAL 30 DAY) + INTERVAL 9 HOUR, DATE_SUB(NOW(), INTERVAL 30 DAY) + INTERVAL 12 HOUR, 15.00, DATE_SUB(NOW(), INTERVAL 31 DAY)),
+(2, 3, DATE_SUB(CURDATE(), INTERVAL 28 DAY), '14:00:00', '18:00:00', 'COMPLETED', DATE_SUB(NOW(), INTERVAL 28 DAY) + INTERVAL 14 HOUR, DATE_SUB(NOW(), INTERVAL 28 DAY) + INTERVAL 18 HOUR, 20.00, DATE_SUB(NOW(), INTERVAL 29 DAY)),
+(3, 5, DATE_SUB(CURDATE(), INTERVAL 25 DAY), '08:00:00', '12:00:00', 'COMPLETED', DATE_SUB(NOW(), INTERVAL 25 DAY) + INTERVAL 8 HOUR, DATE_SUB(NOW(), INTERVAL 25 DAY) + INTERVAL 12 HOUR, 24.00, DATE_SUB(NOW(), INTERVAL 26 DAY)),
+(3, 8, DATE_SUB(CURDATE(), INTERVAL 23 DAY), '13:00:00', '17:00:00', 'COMPLETED', DATE_SUB(NOW(), INTERVAL 23 DAY) + INTERVAL 13 HOUR, DATE_SUB(NOW(), INTERVAL 23 DAY) + INTERVAL 17 HOUR, 20.00, DATE_SUB(NOW(), INTERVAL 24 DAY)),
+(4, 10, DATE_SUB(CURDATE(), INTERVAL 20 DAY), '09:00:00', '16:00:00', 'COMPLETED', DATE_SUB(NOW(), INTERVAL 20 DAY) + INTERVAL 9 HOUR, DATE_SUB(NOW(), INTERVAL 20 DAY) + INTERVAL 16 HOUR, 35.00, DATE_SUB(NOW(), INTERVAL 21 DAY)),
+(4, 15, DATE_SUB(CURDATE(), INTERVAL 18 DAY), '10:00:00', '14:00:00', 'COMPLETED', DATE_SUB(NOW(), INTERVAL 18 DAY) + INTERVAL 10 HOUR, DATE_SUB(NOW(), INTERVAL 18 DAY) + INTERVAL 14 HOUR, 24.00, DATE_SUB(NOW(), INTERVAL 19 DAY)),
+(5, 20, DATE_SUB(CURDATE(), INTERVAL 15 DAY), '08:00:00', '12:00:00', 'COMPLETED', DATE_SUB(NOW(), INTERVAL 15 DAY) + INTERVAL 8 HOUR, DATE_SUB(NOW(), INTERVAL 15 DAY) + INTERVAL 12 HOUR, 20.00, DATE_SUB(NOW(), INTERVAL 16 DAY)),
+(5, 25, DATE_SUB(CURDATE(), INTERVAL 14 DAY), '14:00:00', '20:00:00', 'COMPLETED', DATE_SUB(NOW(), INTERVAL 14 DAY) + INTERVAL 14 HOUR, DATE_SUB(NOW(), INTERVAL 14 DAY) + INTERVAL 20 HOUR, 36.00, DATE_SUB(NOW(), INTERVAL 15 DAY)),
+(2, 12, DATE_SUB(CURDATE(), INTERVAL 12 DAY), '09:00:00', '13:00:00', 'COMPLETED', DATE_SUB(NOW(), INTERVAL 12 DAY) + INTERVAL 9 HOUR, DATE_SUB(NOW(), INTERVAL 12 DAY) + INTERVAL 13 HOUR, 20.00, DATE_SUB(NOW(), INTERVAL 13 DAY)),
+(3, 18, DATE_SUB(CURDATE(), INTERVAL 10 DAY), '10:00:00', '15:00:00', 'COMPLETED', DATE_SUB(NOW(), INTERVAL 10 DAY) + INTERVAL 10 HOUR, DATE_SUB(NOW(), INTERVAL 10 DAY) + INTERVAL 15 HOUR, 25.00, DATE_SUB(NOW(), INTERVAL 11 DAY)),
+(4, 22, DATE_SUB(CURDATE(), INTERVAL 9 DAY), '08:00:00', '11:00:00', 'COMPLETED', DATE_SUB(NOW(), INTERVAL 9 DAY) + INTERVAL 8 HOUR, DATE_SUB(NOW(), INTERVAL 9 DAY) + INTERVAL 11 HOUR, 15.00, DATE_SUB(NOW(), INTERVAL 10 DAY)),
+(5, 28, DATE_SUB(CURDATE(), INTERVAL 8 DAY), '13:00:00', '18:00:00', 'COMPLETED', DATE_SUB(NOW(), INTERVAL 8 DAY) + INTERVAL 13 HOUR, DATE_SUB(NOW(), INTERVAL 8 DAY) + INTERVAL 18 HOUR, 25.00, DATE_SUB(NOW(), INTERVAL 9 DAY)),
+(2, 30, DATE_SUB(CURDATE(), INTERVAL 7 DAY), '09:00:00', '14:00:00', 'COMPLETED', DATE_SUB(NOW(), INTERVAL 7 DAY) + INTERVAL 9 HOUR, DATE_SUB(NOW(), INTERVAL 7 DAY) + INTERVAL 14 HOUR, 25.00, DATE_SUB(NOW(), INTERVAL 8 DAY)),
+
+-- 最近7天的预约（更多数据）
+(3, 2, DATE_SUB(CURDATE(), INTERVAL 6 DAY), '08:00:00', '12:00:00', 'COMPLETED', DATE_SUB(NOW(), INTERVAL 6 DAY) + INTERVAL 8 HOUR, DATE_SUB(NOW(), INTERVAL 6 DAY) + INTERVAL 12 HOUR, 20.00, DATE_SUB(NOW(), INTERVAL 7 DAY)),
+(4, 6, DATE_SUB(CURDATE(), INTERVAL 6 DAY), '14:00:00', '18:00:00', 'COMPLETED', DATE_SUB(NOW(), INTERVAL 6 DAY) + INTERVAL 14 HOUR, DATE_SUB(NOW(), INTERVAL 6 DAY) + INTERVAL 18 HOUR, 24.00, DATE_SUB(NOW(), INTERVAL 7 DAY)),
+(2, 11, DATE_SUB(CURDATE(), INTERVAL 5 DAY), '09:00:00', '13:00:00', 'COMPLETED', DATE_SUB(NOW(), INTERVAL 5 DAY) + INTERVAL 9 HOUR, DATE_SUB(NOW(), INTERVAL 5 DAY) + INTERVAL 13 HOUR, 20.00, DATE_SUB(NOW(), INTERVAL 6 DAY)),
+(3, 13, DATE_SUB(CURDATE(), INTERVAL 5 DAY), '14:00:00', '19:00:00', 'COMPLETED', DATE_SUB(NOW(), INTERVAL 5 DAY) + INTERVAL 14 HOUR, DATE_SUB(NOW(), INTERVAL 5 DAY) + INTERVAL 19 HOUR, 25.00, DATE_SUB(NOW(), INTERVAL 6 DAY)),
+(5, 17, DATE_SUB(CURDATE(), INTERVAL 4 DAY), '08:00:00', '12:00:00', 'COMPLETED', DATE_SUB(NOW(), INTERVAL 4 DAY) + INTERVAL 8 HOUR, DATE_SUB(NOW(), INTERVAL 4 DAY) + INTERVAL 12 HOUR, 20.00, DATE_SUB(NOW(), INTERVAL 5 DAY)),
+(4, 23, DATE_SUB(CURDATE(), INTERVAL 4 DAY), '13:00:00', '17:00:00', 'COMPLETED', DATE_SUB(NOW(), INTERVAL 4 DAY) + INTERVAL 13 HOUR, DATE_SUB(NOW(), INTERVAL 4 DAY) + INTERVAL 17 HOUR, 20.00, DATE_SUB(NOW(), INTERVAL 5 DAY)),
+(2, 26, DATE_SUB(CURDATE(), INTERVAL 3 DAY), '09:00:00', '15:00:00', 'COMPLETED', DATE_SUB(NOW(), INTERVAL 3 DAY) + INTERVAL 9 HOUR, DATE_SUB(NOW(), INTERVAL 3 DAY) + INTERVAL 15 HOUR, 36.00, DATE_SUB(NOW(), INTERVAL 4 DAY)),
+(3, 33, DATE_SUB(CURDATE(), INTERVAL 3 DAY), '10:00:00', '14:00:00', 'COMPLETED', DATE_SUB(NOW(), INTERVAL 3 DAY) + INTERVAL 10 HOUR, DATE_SUB(NOW(), INTERVAL 3 DAY) + INTERVAL 14 HOUR, 20.00, DATE_SUB(NOW(), INTERVAL 4 DAY)),
+(4, 38, DATE_SUB(CURDATE(), INTERVAL 2 DAY), '08:00:00', '12:00:00', 'COMPLETED', DATE_SUB(NOW(), INTERVAL 2 DAY) + INTERVAL 8 HOUR, DATE_SUB(NOW(), INTERVAL 2 DAY) + INTERVAL 12 HOUR, 20.00, DATE_SUB(NOW(), INTERVAL 3 DAY)),
+(5, 43, DATE_SUB(CURDATE(), INTERVAL 2 DAY), '14:00:00', '18:00:00', 'COMPLETED', DATE_SUB(NOW(), INTERVAL 2 DAY) + INTERVAL 14 HOUR, DATE_SUB(NOW(), INTERVAL 2 DAY) + INTERVAL 18 HOUR, 20.00, DATE_SUB(NOW(), INTERVAL 3 DAY)),
+(2, 48, DATE_SUB(CURDATE(), INTERVAL 1 DAY), '09:00:00', '13:00:00', 'COMPLETED', DATE_SUB(NOW(), INTERVAL 1 DAY) + INTERVAL 9 HOUR, DATE_SUB(NOW(), INTERVAL 1 DAY) + INTERVAL 13 HOUR, 20.00, DATE_SUB(NOW(), INTERVAL 2 DAY)),
+(3, 52, DATE_SUB(CURDATE(), INTERVAL 1 DAY), '14:00:00', '19:00:00', 'COMPLETED', DATE_SUB(NOW(), INTERVAL 1 DAY) + INTERVAL 14 HOUR, DATE_SUB(NOW(), INTERVAL 1 DAY) + INTERVAL 19 HOUR, 25.00, DATE_SUB(NOW(), INTERVAL 2 DAY)),
+
+-- 今天的预约（包括各种状态）
+(2, 4, CURDATE(), '09:00:00', '13:00:00', 'USING', NOW() - INTERVAL 2 HOUR, NULL, 20.00, NOW() - INTERVAL 5 HOUR),
+(3, 7, CURDATE(), '10:00:00', '14:00:00', 'USING', NOW() - INTERVAL 1 HOUR, NULL, 20.00, NOW() - INTERVAL 4 HOUR),
+(4, 14, CURDATE(), '08:00:00', '12:00:00', 'COMPLETED', NOW() - INTERVAL 4 HOUR, NOW() - INTERVAL 30 MINUTE, 24.00, NOW() - INTERVAL 5 HOUR),
+(5, 19, CURDATE(), '14:00:00', '18:00:00', 'RESERVED', NULL, NULL, 20.00, NOW() - INTERVAL 2 HOUR),
+(2, 24, CURDATE(), '15:00:00', '20:00:00', 'RESERVED', NULL, NULL, 30.00, NOW() - INTERVAL 1 HOUR),
+
+-- 未来的预约
+(3, 9, DATE_ADD(CURDATE(), INTERVAL 1 DAY), '09:00:00', '13:00:00', 'RESERVED', NULL, NULL, 20.00, NOW()),
+(4, 16, DATE_ADD(CURDATE(), INTERVAL 1 DAY), '14:00:00', '18:00:00', 'RESERVED', NULL, NULL, 24.00, NOW()),
+(5, 21, DATE_ADD(CURDATE(), INTERVAL 2 DAY), '08:00:00', '12:00:00', 'RESERVED', NULL, NULL, 20.00, NOW()),
+(2, 27, DATE_ADD(CURDATE(), INTERVAL 2 DAY), '13:00:00', '17:00:00', 'RESERVED', NULL, NULL, 24.00, NOW()),
+(3, 31, DATE_ADD(CURDATE(), INTERVAL 3 DAY), '09:00:00', '14:00:00', 'RESERVED', NULL, NULL, 25.00, NOW()),
+
+-- 取消和过期的预约
+(4, 35, DATE_SUB(CURDATE(), INTERVAL 5 DAY), '09:00:00', '13:00:00', 'CANCELLED', NULL, NULL, 0.00, DATE_SUB(NOW(), INTERVAL 6 DAY)),
+(5, 40, DATE_SUB(CURDATE(), INTERVAL 3 DAY), '14:00:00', '18:00:00', 'CANCELLED', NULL, NULL, 0.00, DATE_SUB(NOW(), INTERVAL 4 DAY)),
+(2, 45, DATE_SUB(CURDATE(), INTERVAL 2 DAY), '08:00:00', '12:00:00', 'EXPIRED', NULL, NULL, 0.00, DATE_SUB(NOW(), INTERVAL 3 DAY));
+
+-- 12. 插入支付记录（对应已完成的预约）
+INSERT INTO payment_record (user_id, reservation_id, order_no, amount, payment_method, payment_status, third_party_order_no, created_time) VALUES
+-- 钱包支付
+(2, 1, 'PAY202409010001', 15.00, 'WALLET', 'SUCCESS', NULL, DATE_SUB(NOW(), INTERVAL 30 DAY)),
+(2, 2, 'PAY202409030001', 20.00, 'WALLET', 'SUCCESS', NULL, DATE_SUB(NOW(), INTERVAL 28 DAY)),
+(3, 3, 'PAY202409060001', 24.00, 'WALLET', 'SUCCESS', NULL, DATE_SUB(NOW(), INTERVAL 25 DAY)),
+(3, 4, 'PAY202409080001', 20.00, 'WALLET', 'SUCCESS', NULL, DATE_SUB(NOW(), INTERVAL 23 DAY)),
+(4, 5, 'PAY202409110001', 35.00, 'WALLET', 'SUCCESS', NULL, DATE_SUB(NOW(), INTERVAL 20 DAY)),
+-- 微信支付
+(4, 6, 'PAY202409130001', 24.00, 'WECHAT', 'SUCCESS', 'WX2024091398765432101', DATE_SUB(NOW(), INTERVAL 18 DAY)),
+(5, 7, 'PAY202409160001', 20.00, 'WECHAT', 'SUCCESS', 'WX2024091698765432102', DATE_SUB(NOW(), INTERVAL 15 DAY)),
+-- 支付宝支付
+(5, 8, 'PAY202409170001', 36.00, 'ALIPAY', 'SUCCESS', 'ALI2024091798765432101', DATE_SUB(NOW(), INTERVAL 14 DAY)),
+(2, 9, 'PAY202409190001', 20.00, 'ALIPAY', 'SUCCESS', 'ALI2024091998765432102', DATE_SUB(NOW(), INTERVAL 12 DAY)),
+-- 继续钱包支付
+(3, 10, 'PAY202409210001', 25.00, 'WALLET', 'SUCCESS', NULL, DATE_SUB(NOW(), INTERVAL 10 DAY)),
+(4, 11, 'PAY202409220001', 15.00, 'WALLET', 'SUCCESS', NULL, DATE_SUB(NOW(), INTERVAL 9 DAY)),
+(5, 12, 'PAY202409230001', 25.00, 'WALLET', 'SUCCESS', NULL, DATE_SUB(NOW(), INTERVAL 8 DAY)),
+(2, 13, 'PAY202409240001', 25.00, 'WALLET', 'SUCCESS', NULL, DATE_SUB(NOW(), INTERVAL 7 DAY)),
+(3, 14, 'PAY202409250001', 20.00, 'WALLET', 'SUCCESS', NULL, DATE_SUB(NOW(), INTERVAL 6 DAY)),
+(4, 15, 'PAY202409250002', 24.00, 'WALLET', 'SUCCESS', NULL, DATE_SUB(NOW(), INTERVAL 6 DAY)),
+(2, 16, 'PAY202409260001', 20.00, 'WALLET', 'SUCCESS', NULL, DATE_SUB(NOW(), INTERVAL 5 DAY)),
+(3, 17, 'PAY202409260002', 25.00, 'WALLET', 'SUCCESS', NULL, DATE_SUB(NOW(), INTERVAL 5 DAY)),
+(5, 18, 'PAY202409270001', 20.00, 'WALLET', 'SUCCESS', NULL, DATE_SUB(NOW(), INTERVAL 4 DAY)),
+(4, 19, 'PAY202409270002', 20.00, 'WALLET', 'SUCCESS', NULL, DATE_SUB(NOW(), INTERVAL 4 DAY)),
+(2, 20, 'PAY202409280001', 36.00, 'WALLET', 'SUCCESS', NULL, DATE_SUB(NOW(), INTERVAL 3 DAY)),
+(3, 21, 'PAY202409280002', 20.00, 'WALLET', 'SUCCESS', NULL, DATE_SUB(NOW(), INTERVAL 3 DAY)),
+(4, 22, 'PAY202409290001', 20.00, 'WALLET', 'SUCCESS', NULL, DATE_SUB(NOW(), INTERVAL 2 DAY)),
+(5, 23, 'PAY202409290002', 20.00, 'WALLET', 'SUCCESS', NULL, DATE_SUB(NOW(), INTERVAL 2 DAY)),
+(2, 24, 'PAY202409300001', 20.00, 'WALLET', 'SUCCESS', NULL, DATE_SUB(NOW(), INTERVAL 1 DAY)),
+(3, 25, 'PAY202409300002', 25.00, 'WALLET', 'SUCCESS', NULL, DATE_SUB(NOW(), INTERVAL 1 DAY)),
+-- 今天的支付
+(4, 26, 'PAY202410010001', 24.00, 'WALLET', 'SUCCESS', NULL, NOW() - INTERVAL 5 HOUR),
+-- 待支付
+(2, 27, 'PAY202410010002', 20.00, 'WALLET', 'PENDING', NULL, NOW() - INTERVAL 2 HOUR),
+(3, 28, 'PAY202410010003', 20.00, 'WALLET', 'PENDING', NULL, NOW() - INTERVAL 4 HOUR);
+
+-- 13. 更新用户钱包余额（扣除支付金额）
+UPDATE user_wallet SET
+    balance = balance - 195.00,
+    total_consume = 195.00
+WHERE user_id = 2;
+
+UPDATE user_wallet SET
+    balance = balance - 154.00,
+    total_consume = 154.00
+WHERE user_id = 3;
+
+UPDATE user_wallet SET
+    balance = balance - 138.00,
+    total_consume = 138.00
+WHERE user_id = 4;
+
+UPDATE user_wallet SET
+    balance = balance - 121.00,
+    total_consume = 121.00
+WHERE user_id = 5;
+
+-- 14. 插入更多充值记录
+INSERT INTO recharge_record (user_id, order_no, amount, bonus_amount, payment_method, payment_status, third_party_order_no, created_time) VALUES
+-- 成功的充值
+(2, 'RCH202409010001', 50.00, 5.00, 'WECHAT', 'SUCCESS', 'WX2024090112345678901', DATE_SUB(NOW(), INTERVAL 30 DAY)),
+(3, 'RCH202409050001', 100.00, 10.00, 'ALIPAY', 'SUCCESS', 'ALI2024090512345678901', DATE_SUB(NOW(), INTERVAL 26 DAY)),
+(4, 'RCH202409100001', 50.00, 5.00, 'WECHAT', 'SUCCESS', 'WX2024091012345678901', DATE_SUB(NOW(), INTERVAL 21 DAY)),
+(5, 'RCH202409120001', 30.00, 2.00, 'ALIPAY', 'SUCCESS', 'ALI2024091212345678901', DATE_SUB(NOW(), INTERVAL 19 DAY)),
+(2, 'RCH202409200001', 100.00, 10.00, 'WECHAT', 'SUCCESS', 'WX2024092012345678901', DATE_SUB(NOW(), INTERVAL 11 DAY)),
+(3, 'RCH202409220001', 50.00, 5.00, 'ALIPAY', 'SUCCESS', 'ALI2024092212345678901', DATE_SUB(NOW(), INTERVAL 9 DAY)),
+(4, 'RCH202409250001', 100.00, 10.00, 'WECHAT', 'SUCCESS', 'WX2024092512345678901', DATE_SUB(NOW(), INTERVAL 6 DAY)),
+(5, 'RCH202409270001', 50.00, 5.00, 'ALIPAY', 'SUCCESS', 'ALI2024092712345678901', DATE_SUB(NOW(), INTERVAL 4 DAY)),
+-- 待处理的充值
+(2, 'RCH202409300001', 50.00, 5.00, 'WECHAT', 'PENDING', 'WX2024093012345678901', NOW() - INTERVAL 2 HOUR),
+-- 失败的充值
+(3, 'RCH202409280001', 100.00, 10.00, 'ALIPAY', 'FAILED', 'ALI2024092812345678901', DATE_SUB(NOW(), INTERVAL 3 DAY));
+
+-- 15. 插入意见反馈
+INSERT INTO feedback (user_id, type, content, reply, status, replied_time, replied_by, created_time) VALUES
+(2, 'SUGGESTION', '希望能增加座位预约时间的灵活性，比如可以按半小时预约', '感谢您的建议，我们会在下一版本中考虑增加更灵活的时间选择功能', 'REPLIED', DATE_SUB(NOW(), INTERVAL 5 DAY), 1, DATE_SUB(NOW(), INTERVAL 7 DAY)),
+(3, 'BUG', '有时候签到按钮点击没有反应，需要刷新页面', '感谢反馈，我们已经修复了这个问题，请更新到最新版本', 'REPLIED', DATE_SUB(NOW(), INTERVAL 3 DAY), 1, DATE_SUB(NOW(), INTERVAL 5 DAY)),
+(4, 'SUGGESTION', '建议增加座位环境照片，方便选择', '好的建议，我们正在收集各座位的实景照片', 'REPLIED', DATE_SUB(NOW(), INTERVAL 2 DAY), 1, DATE_SUB(NOW(), INTERVAL 4 DAY)),
+(5, 'COMPLAINT', 'A025座位的电源插座有问题，无法正常使用', '非常抱歉给您带来不便，我们已经安排维修人员处理', 'REPLIED', DATE_SUB(NOW(), INTERVAL 1 DAY), 1, DATE_SUB(NOW(), INTERVAL 2 DAY)),
+(2, 'SUGGESTION', '希望能增加学习时长统计功能', NULL, 'PENDING', NULL, NULL, NOW() - INTERVAL 1 DAY),
+(3, 'OTHER', '系统整体体验很好，希望能继续优化', NULL, 'PENDING', NULL, NULL, NOW() - INTERVAL 12 HOUR);
+
+-- 16. 插入通知记录
+INSERT INTO notification (user_id, title, content, type, is_read, read_time, created_time) VALUES
+-- 预约相关通知
+(2, '预约成功', '您已成功预约座位A004，时间：' || CURDATE() || ' 09:00-13:00，请准时到达', 'RESERVATION', TRUE, NOW() - INTERVAL 4 HOUR, NOW() - INTERVAL 5 HOUR),
+(3, '预约成功', '您已成功预约座位A007，时间：' || CURDATE() || ' 10:00-14:00，请准时到达', 'RESERVATION', TRUE, NOW() - INTERVAL 3 HOUR, NOW() - INTERVAL 4 HOUR),
+(4, '签到提醒', '您的预约即将开始，座位：A014，时间：08:00-12:00，请尽快签到', 'RESERVATION', TRUE, NOW() - INTERVAL 5 HOUR, NOW() - INTERVAL 5 HOUR + INTERVAL 30 MINUTE),
+(5, '预约成功', '您已成功预约座位A019，时间：' || CURDATE() || ' 14:00-18:00，请准时到达', 'RESERVATION', FALSE, NULL, NOW() - INTERVAL 2 HOUR),
+(2, '预约成功', '您已成功预约座位A024，时间：' || CURDATE() || ' 15:00-20:00，请准时到达', 'RESERVATION', FALSE, NULL, NOW() - INTERVAL 1 HOUR),
+-- 系统通知
+(2, '系统维护通知', '系统将于本周日凌晨2:00-4:00进行维护升级，期间无法使用，请提前安排', 'SYSTEM', TRUE, DATE_SUB(NOW(), INTERVAL 2 DAY), DATE_SUB(NOW(), INTERVAL 3 DAY)),
+(3, '系统维护通知', '系统将于本周日凌晨2:00-4:00进行维护升级，期间无法使用，请提前安排', 'SYSTEM', TRUE, DATE_SUB(NOW(), INTERVAL 2 DAY), DATE_SUB(NOW(), INTERVAL 3 DAY)),
+(4, '系统维护通知', '系统将于本周日凌晨2:00-4:00进行维护升级，期间无法使用，请提前安排', 'SYSTEM', FALSE, NULL, DATE_SUB(NOW(), INTERVAL 3 DAY)),
+(5, '系统维护通知', '系统将于本周日凌晨2:00-4:00进行维护升级，期间无法使用，请提前安排', 'SYSTEM', FALSE, NULL, DATE_SUB(NOW(), INTERVAL 3 DAY)),
+-- 公告通知
+(2, '新公告发布', '自习室座位预约系统正式上线', 'ANNOUNCEMENT', TRUE, DATE_SUB(NOW(), INTERVAL 5 DAY), DATE_SUB(NOW(), INTERVAL 6 DAY)),
+(3, '新公告发布', '自习室座位预约系统正式上线', 'ANNOUNCEMENT', TRUE, DATE_SUB(NOW(), INTERVAL 5 DAY), DATE_SUB(NOW(), INTERVAL 6 DAY)),
+(4, '新公告发布', '自习室座位预约系统正式上线', 'ANNOUNCEMENT', TRUE, DATE_SUB(NOW(), INTERVAL 4 DAY), DATE_SUB(NOW(), INTERVAL 6 DAY)),
+(5, '新公告发布', '自习室座位预约系统正式上线', 'ANNOUNCEMENT', FALSE, NULL, DATE_SUB(NOW(), INTERVAL 6 DAY));
+
+-- 17. 插入操作日志
+INSERT INTO operation_log (user_id, operation_type, operation_desc, request_method, request_url, ip_address, created_time) VALUES
+(1, 'LOGIN', '管理员登录系统', 'POST', '/auth/login', '192.168.1.100', NOW() - INTERVAL 2 HOUR),
+(1, 'CREATE', '创建公告：自习室座位预约系统正式上线', 'POST', '/announcement/admin/create', '192.168.1.100', DATE_SUB(NOW(), INTERVAL 6 DAY)),
+(1, 'UPDATE', '更新系统设置', 'PUT', '/settings/update', '192.168.1.100', DATE_SUB(NOW(), INTERVAL 5 DAY)),
+(2, 'LOGIN', '用户登录系统', 'POST', '/auth/login', '192.168.1.101', NOW() - INTERVAL 5 HOUR),
+(2, 'CREATE', '创建预约记录', 'POST', '/reservation/create', '192.168.1.101', NOW() - INTERVAL 5 HOUR),
+(2, 'CHECKIN', '签到：座位A004', 'POST', '/reservation/checkin', '192.168.1.101', NOW() - INTERVAL 4 HOUR),
+(3, 'LOGIN', '用户登录系统', 'POST', '/auth/login', '192.168.1.102', NOW() - INTERVAL 4 HOUR),
+(3, 'CREATE', '创建预约记录', 'POST', '/reservation/create', '192.168.1.102', NOW() - INTERVAL 4 HOUR),
+(3, 'CHECKIN', '签到：座位A007', 'POST', '/reservation/checkin', '192.168.1.102', NOW() - INTERVAL 3 HOUR),
+(4, 'LOGIN', '用户登录系统', 'POST', '/auth/login', '192.168.1.103', NOW() - INTERVAL 6 HOUR),
+(4, 'CREATE', '创建预约记录', 'POST', '/reservation/create', '192.168.1.103', NOW() - INTERVAL 5 HOUR),
+(4, 'CHECKIN', '签到：座位A014', 'POST', '/reservation/checkin', '192.168.1.103', NOW() - INTERVAL 5 HOUR),
+(4, 'CHECKOUT', '签退：座位A014', 'POST', '/reservation/checkout', '192.168.1.103', NOW() - INTERVAL 30 MINUTE),
+(5, 'LOGIN', '用户登录系统', 'POST', '/auth/login', '192.168.1.104', NOW() - INTERVAL 2 HOUR),
+(5, 'CREATE', '创建预约记录', 'POST', '/reservation/create', '192.168.1.104', NOW() - INTERVAL 2 HOUR);
+
 -- ========================================
--- 第七部分：数据验证和总结
+-- 第七部分：统计视图和报表功能
+-- ========================================
+
+-- 1. 创建每日统计视图
+CREATE OR REPLACE VIEW daily_statistics AS
+SELECT
+    DATE(r.created_time) as stat_date,
+    COUNT(DISTINCT r.id) as total_reservations,
+    COUNT(DISTINCT CASE WHEN r.status = 'COMPLETED' THEN r.id END) as completed_count,
+    COUNT(DISTINCT CASE WHEN r.status = 'CANCELLED' THEN r.id END) as cancelled_count,
+    COUNT(DISTINCT CASE WHEN r.status = 'EXPIRED' THEN r.id END) as expired_count,
+    COUNT(DISTINCT r.user_id) as active_users,
+    COALESCE(SUM(CASE WHEN p.payment_status = 'SUCCESS' THEN p.amount ELSE 0 END), 0) as total_revenue,
+    COALESCE(AVG(CASE WHEN r.status = 'COMPLETED' THEN
+        TIMESTAMPDIFF(MINUTE, r.check_in_time, r.check_out_time) / 60.0
+    END), 0) as avg_usage_hours
+FROM reservation r
+LEFT JOIN payment_record p ON r.id = p.reservation_id
+GROUP BY DATE(r.created_time)
+ORDER BY stat_date DESC;
+
+-- 2. 创建座位使用率统计视图
+CREATE OR REPLACE VIEW seat_utilization AS
+SELECT
+    s.id as seat_id,
+    s.seat_number,
+    s.area,
+    st.type_name,
+    COUNT(DISTINCT r.id) as total_bookings,
+    COUNT(DISTINCT CASE WHEN r.status = 'COMPLETED' THEN r.id END) as completed_bookings,
+    COALESCE(SUM(CASE WHEN r.status = 'COMPLETED' THEN
+        TIMESTAMPDIFF(MINUTE, r.check_in_time, r.check_out_time) / 60.0
+    END), 0) as total_usage_hours,
+    ROUND(COUNT(DISTINCT CASE WHEN r.status = 'COMPLETED' THEN r.id END) * 100.0 /
+        NULLIF(COUNT(DISTINCT r.id), 0), 2) as completion_rate
+FROM seat s
+LEFT JOIN seat_type st ON s.seat_type_id = st.id
+LEFT JOIN reservation r ON s.id = r.seat_id
+GROUP BY s.id, s.seat_number, s.area, st.type_name
+ORDER BY total_bookings DESC;
+
+-- 3. 创建用户活跃度统计视图
+CREATE OR REPLACE VIEW user_activity AS
+SELECT
+    u.id as user_id,
+    u.username,
+    u.real_name,
+    COUNT(DISTINCT r.id) as total_reservations,
+    COUNT(DISTINCT CASE WHEN r.status = 'COMPLETED' THEN r.id END) as completed_reservations,
+    COUNT(DISTINCT CASE WHEN r.status = 'CANCELLED' THEN r.id END) as cancelled_reservations,
+    COALESCE(SUM(CASE WHEN p.payment_status = 'SUCCESS' THEN p.amount ELSE 0 END), 0) as total_spending,
+    COALESCE(w.balance, 0) as current_balance,
+    COALESCE(w.total_recharge, 0) as total_recharge,
+    MAX(r.created_time) as last_reservation_time
+FROM sys_user u
+LEFT JOIN reservation r ON u.id = r.user_id
+LEFT JOIN payment_record p ON r.id = p.reservation_id
+LEFT JOIN user_wallet w ON u.id = w.user_id
+WHERE u.role = 'STUDENT'
+GROUP BY u.id, u.username, u.real_name, w.balance, w.total_recharge
+ORDER BY total_reservations DESC;
+
+-- 4. 创建收入统计视图
+CREATE OR REPLACE VIEW revenue_statistics AS
+SELECT
+    DATE(p.created_time) as revenue_date,
+    COUNT(DISTINCT p.id) as payment_count,
+    SUM(CASE WHEN p.payment_status = 'SUCCESS' THEN p.amount ELSE 0 END) as daily_revenue,
+    SUM(CASE WHEN p.payment_method = 'WALLET' AND p.payment_status = 'SUCCESS' THEN p.amount ELSE 0 END) as wallet_revenue,
+    SUM(CASE WHEN p.payment_method = 'WECHAT' AND p.payment_status = 'SUCCESS' THEN p.amount ELSE 0 END) as wechat_revenue,
+    SUM(CASE WHEN p.payment_method = 'ALIPAY' AND p.payment_status = 'SUCCESS' THEN p.amount ELSE 0 END) as alipay_revenue,
+    COUNT(DISTINCT p.user_id) as paying_users
+FROM payment_record p
+GROUP BY DATE(p.created_time)
+ORDER BY revenue_date DESC;
+
+-- 5. 创建时段热度统计视图
+CREATE OR REPLACE VIEW time_slot_popularity AS
+SELECT
+    HOUR(r.start_time) as hour_slot,
+    COUNT(DISTINCT r.id) as booking_count,
+    COUNT(DISTINCT CASE WHEN r.status = 'COMPLETED' THEN r.id END) as completed_count,
+    ROUND(AVG(CASE WHEN r.status = 'COMPLETED' THEN
+        TIMESTAMPDIFF(MINUTE, r.check_in_time, r.check_out_time) / 60.0
+    END), 2) as avg_duration_hours
+FROM reservation r
+GROUP BY HOUR(r.start_time)
+ORDER BY hour_slot;
+
+-- ========================================
+-- 第八部分：数据验证和总结
 -- ========================================
 
 -- 显示数据初始化统计
@@ -522,11 +783,40 @@ SELECT
     (SELECT COUNT(*) FROM sys_user) as user_count,
     (SELECT COUNT(*) FROM seat_type) as seat_type_count,
     (SELECT COUNT(*) FROM seat) as seat_count,
+    (SELECT COUNT(*) FROM reservation) as reservation_count,
+    (SELECT COUNT(*) FROM payment_record) as payment_count,
+    (SELECT COUNT(*) FROM recharge_record) as recharge_count,
     (SELECT COUNT(*) FROM user_wallet) as wallet_count,
     (SELECT COUNT(*) FROM sys_announcement) as announcement_count,
     (SELECT COUNT(*) FROM system_settings) as settings_count,
     (SELECT COUNT(*) FROM seat_favorite) as favorite_count,
+    (SELECT COUNT(*) FROM feedback) as feedback_count,
+    (SELECT COUNT(*) FROM notification) as notification_count,
+    (SELECT COUNT(*) FROM operation_log) as log_count,
     (SELECT COUNT(*) FROM study_room) as study_room_count;
+
+-- 显示统计视图
+SELECT '=== 最近7天每日统计 ===' as info;
+SELECT * FROM daily_statistics WHERE stat_date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) ORDER BY stat_date;
+
+SELECT '=== 热门座位TOP10 ===' as info;
+SELECT * FROM seat_utilization WHERE total_bookings > 0 LIMIT 10;
+
+SELECT '=== 用户活跃度 ===' as info;
+SELECT * FROM user_activity ORDER BY total_reservations DESC;
+
+SELECT '=== 收入统计（最近7天） ===' as info;
+SELECT * FROM revenue_statistics WHERE revenue_date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) ORDER BY revenue_date;
+
+SELECT '=== 时段热度统计 ===' as info;
+SELECT
+    CONCAT(hour_slot, ':00-', hour_slot+1, ':00') as time_range,
+    booking_count,
+    completed_count,
+    avg_duration_hours
+FROM time_slot_popularity
+WHERE booking_count > 0
+ORDER BY hour_slot;
 
 -- 显示主要测试账号信息
 SELECT
@@ -578,15 +868,28 @@ COMMIT;
 -- 学生4：student004 / 123456
 -- 学生5：student005 / 123456
 --
--- 【测试数据】
+-- 【测试数据】（覆盖近30天的完整业务场景）
 -- - 4种座位类型
 -- - 60个座位（2楼A区和B区）
 -- - 6个用户（1个管理员 + 5个学生）
--- - 所有用户都有钱包账户
+-- - 40+条预约记录（包含各种状态：已完成、使用中、已预约、已取消、已过期）
+-- - 28条支付记录（钱包、微信、支付宝多种支付方式）
+-- - 13条充值记录（成功、待处理、失败多种状态）
+-- - 所有用户都有钱包账户及交易记录
 -- - 5条座位收藏记录
 -- - 3条系统公告
--- - 完整的系统设置配置
+-- - 6条意见反馈（包含建议、BUG、投诉等）
+-- - 13条通知记录（预约、系统、公告等类型）
+-- - 14条操作日志
+-- - 完整的系统设置配置（6大类40+项配置）
 -- - 3个自习室信息
+--
+-- 【统计视图】（用于报表和数据分析）
+-- - daily_statistics      : 每日统计（预约数、收入、活跃用户等）
+-- - seat_utilization      : 座位使用率统计（预订次数、完成率等）
+-- - user_activity         : 用户活跃度统计（预约次数、消费金额等）
+-- - revenue_statistics    : 收入统计（按日期、支付方式分组）
+-- - time_slot_popularity  : 时段热度统计（各时段预约情况）
 --
 -- 【导入方法】
 -- Windows CMD:
@@ -599,5 +902,27 @@ COMMIT;
 --
 -- 或在MySQL命令行中：
 --   SOURCE /path/to/init_database.sql;
+--
+-- 【统计视图使用示例】
+-- 1. 查询最近7天的预约和收入趋势：
+--    SELECT * FROM daily_statistics WHERE stat_date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY);
+--
+-- 2. 查询最受欢迎的座位TOP10：
+--    SELECT * FROM seat_utilization ORDER BY total_bookings DESC LIMIT 10;
+--
+-- 3. 查询最活跃用户TOP5：
+--    SELECT * FROM user_activity ORDER BY total_reservations DESC LIMIT 5;
+--
+-- 4. 查询本月总收入：
+--    SELECT SUM(daily_revenue) as monthly_revenue FROM revenue_statistics
+--    WHERE revenue_date >= DATE_FORMAT(NOW(), '%Y-%m-01');
+--
+-- 5. 查询最热门的预约时段：
+--    SELECT * FROM time_slot_popularity ORDER BY booking_count DESC LIMIT 5;
+--
+-- 【修复脚本】
+-- 如遇到问题，可使用以下修复脚本：
+-- - fix_admin_password.sql       : 修复管理员密码
+-- - fix_announcement_priority.sql: 修复公告优先级字段类型
 --
 -- ========================================
