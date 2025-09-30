@@ -1,0 +1,203 @@
+/* Apple Design System - CSS Variables */
+:root {
+  /* Color Palette - Unified System */
+  --apple-blue: #4C6FFF;
+  --apple-green: #059669;
+  --apple-indigo: #3754DB;
+  --apple-orange: #F59E0B;
+  --apple-pink: #EC4899;
+  --apple-purple: #7C3AED;
+  --apple-red: #D94747;
+  --apple-teal: #06B6D4;
+  --apple-yellow: #F59E0B;
+  --apple-gray: #8E8E93;
+  --apple-gray2: #AEAEB2;
+  --apple-gray3: #C7C7CC;
+  --apple-gray4: #D1D1D6;
+  --apple-gray5: #E5E5EA;
+  --apple-gray6: #F2F2F7;
+
+  /* Semantic Colors */
+  --apple-label: #000000;
+  --apple-secondary-label: #3C3C43;
+  --apple-tertiary-label: #3C3C43;
+  --apple-quaternary-label: #3C3C43;
+  --apple-system-fill: #787880;
+  --apple-secondary-system-fill: #787880;
+  --apple-tertiary-system-fill: #767680;
+  --apple-quaternary-system-fill: #747480;
+
+  /* Background Colors */
+  --apple-system-background: #FFFFFF;
+  --apple-secondary-system-background: #F9FAFB;
+  --apple-tertiary-system-background: #FFFFFF;
+  --apple-system-grouped-background: #F9FAFB;
+  --apple-secondary-system-grouped-background: #FFFFFF;
+  --apple-tertiary-system-grouped-background: #F9FAFB;
+
+  /* Shadow & Blur */
+  --apple-shadow-light: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+  --apple-shadow-medium: 0 4px 6px rgba(0, 0, 0, 0.07), 0 1px 3px rgba(0, 0, 0, 0.06);
+  --apple-shadow-large: 0 10px 15px rgba(0, 0, 0, 0.1), 0 4px 6px rgba(0, 0, 0, 0.05);
+  --apple-shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.1), 0 10px 10px rgba(0, 0, 0, 0.04);
+
+  /* Border Radius */
+  --apple-radius-small: 6px;
+  --apple-radius-medium: 10px;
+  --apple-radius-large: 16px;
+  --apple-radius-xl: 20px;
+  --apple-radius-2xl: 28px;
+
+  /* Typography */
+  --apple-font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
+  --apple-font-mono: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, monospace;
+
+  /* Font Sizes */
+  --apple-text-xs: 10px;
+  --apple-text-sm: 12px;
+  --apple-text-base: 14px;
+  --apple-text-lg: 16px;
+  --apple-text-xl: 18px;
+  --apple-text-2xl: 20px;
+  --apple-text-3xl: 24px;
+  --apple-text-4xl: 28px;
+  --apple-text-5xl: 36px;
+
+  /* Font Weights */
+  --apple-weight-light: 300;
+  --apple-weight-normal: 400;
+  --apple-weight-medium: 500;
+  --apple-weight-semibold: 600;
+  --apple-weight-bold: 700;
+
+  /* Line Heights */
+  --apple-leading-tight: 1.25;
+  --apple-leading-snug: 1.375;
+  --apple-leading-normal: 1.5;
+  --apple-leading-relaxed: 1.625;
+
+  /* Spacing */
+  --apple-space-1: 4px;
+  --apple-space-2: 8px;
+  --apple-space-3: 12px;
+  --apple-space-4: 16px;
+  --apple-space-5: 20px;
+  --apple-space-6: 24px;
+  --apple-space-8: 32px;
+  --apple-space-10: 40px;
+  --apple-space-12: 48px;
+  --apple-space-16: 64px;
+  --apple-space-20: 80px;
+
+  /* Transitions */
+  --apple-transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --apple-transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  --apple-transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Z-Index Scale */
+  --apple-z-dropdown: 1000;
+  --apple-z-sticky: 1020;
+  --apple-z-fixed: 1030;
+  --apple-z-modal-backdrop: 1040;
+  --apple-z-modal: 1050;
+  --apple-z-popover: 1060;
+  --apple-z-tooltip: 1070;
+
+  /* Blur Effects */
+  --apple-blur-light: blur(10px);
+  --apple-blur-medium: blur(20px);
+  --apple-blur-heavy: blur(40px);
+
+  /* Glass Effect */
+  --apple-glass-light: rgba(255, 255, 255, 0.8);
+  --apple-glass-medium: rgba(255, 255, 255, 0.6);
+  --apple-glass-dark: rgba(255, 255, 255, 0.4);
+
+  /* Gradients */
+  --apple-gradient-blue: linear-gradient(135deg, var(--apple-blue), var(--apple-teal));
+  --apple-gradient-green: linear-gradient(135deg, var(--apple-green), var(--apple-teal));
+  --apple-gradient-purple: linear-gradient(135deg, var(--apple-purple), var(--apple-indigo));
+  --apple-gradient-orange: linear-gradient(135deg, var(--apple-orange), var(--apple-yellow));
+  --apple-gradient-pink: linear-gradient(135deg, var(--apple-pink), var(--apple-orange));
+  --apple-gradient-gray: linear-gradient(135deg, var(--apple-gray2), var(--apple-gray4));
+
+  /* Button States */
+  --apple-button-primary-bg: #4C6FFF;
+  --apple-button-primary-hover: #5C7CFF;
+  --apple-button-primary-active: #3754DB;
+
+  --apple-button-secondary-bg: #FFFFFF;
+  --apple-button-secondary-hover: #F9FAFB;
+  --apple-button-secondary-active: #F3F4F6;
+
+  /* Input States */
+  --apple-input-border: #E5E7EB;
+  --apple-input-border-focus: #4C6FFF;
+  --apple-input-bg: #FFFFFF;
+  --apple-input-bg-focus: #FFFFFF;
+
+  /* Card Styles */
+  --apple-card-bg: #FFFFFF;
+  --apple-card-border: #E5E7EB;
+  --apple-card-shadow: 0 4px 6px rgba(0, 0, 0, 0.07), 0 1px 3px rgba(0, 0, 0, 0.06);
+  --apple-card-radius: 16px;
+}
+
+/* Dark Mode Support - DISABLED for consistent light theme */
+/* @media (prefers-color-scheme: dark) {
+  :root {
+    --apple-label: #FFFFFF;
+    --apple-secondary-label: #EBEBF5;
+    --apple-tertiary-label: #EBEBF5;
+    --apple-quaternary-label: #EBEBF5;
+    --apple-system-fill: #787880;
+    --apple-secondary-system-fill: #787880;
+    --apple-tertiary-system-fill: #767680;
+    --apple-quaternary-system-fill: #747480;
+
+    --apple-system-background: #000000;
+    --apple-secondary-system-background: #1C1C1E;
+    --apple-tertiary-system-background: #2C2C2E;
+    --apple-system-grouped-background: #000000;
+    --apple-secondary-system-grouped-background: #1C1C1E;
+    --apple-tertiary-system-grouped-background: #2C2C2E;
+
+    --apple-glass-light: rgba(28, 28, 30, 0.8);
+    --apple-glass-medium: rgba(28, 28, 30, 0.6);
+    --apple-glass-dark: rgba(28, 28, 30, 0.4);
+
+    --apple-card-bg: var(--apple-secondary-system-background);
+    --apple-card-border: #3A3A3C;
+    --apple-card-shadow: 0 4px 6px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.2);
+
+    --apple-input-border: #3A3A3C;
+    --apple-input-bg: var(--apple-tertiary-system-background);
+    --apple-input-bg-focus: var(--apple-tertiary-system-background);
+
+    --apple-button-secondary-bg: var(--apple-tertiary-system-background);
+    --apple-button-secondary-hover: #3A3A3C;
+    --apple-button-secondary-active: #48484A;
+  }
+} */
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --apple-transition-fast: 0ms;
+    --apple-transition-normal: 0ms;
+    --apple-transition-slow: 0ms;
+  }
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+  :root {
+    --apple-shadow-light: none;
+    --apple-shadow-medium: none;
+    --apple-shadow-large: none;
+    --apple-shadow-xl: none;
+
+    --apple-card-border: var(--apple-gray);
+    --apple-input-border: var(--apple-gray);
+  }
+}

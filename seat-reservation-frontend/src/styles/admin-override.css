@@ -1,0 +1,325 @@
+/* 管理后台统一样式优化 */
+
+/* 全局后台样式 */
+.admin-layout,
+.dashboard,
+.seats-management,
+.users-management,
+.reservations-management,
+.announcements-management,
+.reports,
+.settings {
+  background: transparent !important;
+  color: var(--color-text-primary) !important;
+}
+
+/* 标题文字颜色修正 */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--color-text-primary) !important;
+}
+
+/* 修复硬编码的颜色 */
+[style*="color: #2c3e50"],
+[style*="color: #303133"],
+[style*="color: #606266"] {
+  color: var(--color-text-primary) !important;
+}
+
+/* 后台侧边栏优化 */
+.admin-layout .sidebar {
+  background: #ffffff !important;
+  border-right: 1px solid var(--color-border) !important;
+}
+
+.admin-layout .sidebar-header {
+  padding: 20px !important;
+  border-bottom: 1px solid var(--color-border) !important;
+}
+
+.admin-layout .admin-menu {
+  border-right: none !important;
+}
+
+.admin-layout .el-menu-item {
+  color: var(--color-text-primary) !important;
+  transition: all 0.3s !important;
+}
+
+.admin-layout .el-menu-item:hover {
+  background: rgba(76, 111, 255, 0.05) !important;
+  color: var(--color-primary) !important;
+}
+
+.admin-layout .el-menu-item.is-active {
+  background: var(--color-primary) !important;
+  color: #ffffff !important;
+  position: relative !important;
+}
+
+.admin-layout .el-menu-item.is-active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--color-primary-dark);
+}
+
+/* 后台顶部栏优化 */
+.admin-layout .top-bar {
+  background: #ffffff !important;
+  border-bottom: 1px solid var(--color-border) !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.03) !important;
+}
+
+.admin-layout .breadcrumb {
+  color: var(--color-text-secondary) !important;
+}
+
+.admin-layout .user-info {
+  color: var(--color-text-primary) !important;
+}
+
+/* 后台页面内容区域 */
+.admin-layout .page-content {
+  background: var(--color-background-secondary) !important;
+  padding: 24px !important;
+}
+
+/* Dashboard页面特定样式 */
+.dashboard {
+  padding: 0 !important;
+}
+
+.dashboard .stat-card {
+  background: #ffffff !important;
+  border: none !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06) !important;
+}
+
+.dashboard .stat-card:hover {
+  transform: translateY(-4px) !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1) !important;
+}
+
+.dashboard .stat-icon {
+  width: 60px !important;
+  height: 60px !important;
+  border-radius: 12px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: #ffffff !important;
+  font-size: 24px !important;
+}
+
+.dashboard .stat-number {
+  color: var(--color-text-primary) !important;
+  font-size: 28px !important;
+  font-weight: 600 !important;
+}
+
+.dashboard .stat-label {
+  color: var(--color-text-secondary) !important;
+  font-size: 14px !important;
+}
+
+.dashboard .chart-card {
+  background: #ffffff !important;
+  border: none !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06) !important;
+}
+
+/* 座位管理页面 */
+.seats-management .page-title {
+  color: var(--color-text-primary) !important;
+  margin-bottom: 24px !important;
+}
+
+.seats-management .el-card {
+  background: #ffffff !important;
+  border: none !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06) !important;
+}
+
+/* 用户管理页面 */
+.users-management .page-title {
+  color: var(--color-text-primary) !important;
+  margin-bottom: 24px !important;
+}
+
+.users-management .el-card {
+  background: #ffffff !important;
+  border: none !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06) !important;
+}
+
+/* 预约管理页面 */
+.reservations-management .el-card {
+  background: #ffffff !important;
+  border: none !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06) !important;
+}
+
+/* 公告管理页面 */
+.announcements-management .el-card {
+  background: #ffffff !important;
+  border: none !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06) !important;
+}
+
+/* 报表页面 */
+.reports .el-card {
+  background: #ffffff !important;
+  border: none !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06) !important;
+}
+
+/* 设置页面 */
+.settings .el-card {
+  background: #ffffff !important;
+  border: none !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06) !important;
+}
+
+.settings .el-form-item__label {
+  color: var(--color-text-primary) !important;
+}
+
+/* 后台表格统一样式 */
+.admin-layout .el-table {
+  background: #ffffff !important;
+  border: 1px solid var(--color-border) !important;
+  border-radius: 8px !important;
+  overflow: hidden !important;
+}
+
+.admin-layout .el-table__header-wrapper {
+  background: var(--color-background-secondary) !important;
+}
+
+.admin-layout .el-table th {
+  background: var(--color-background-secondary) !important;
+  color: var(--color-text-primary) !important;
+  font-weight: 600 !important;
+  border-bottom: 1px solid var(--color-border) !important;
+}
+
+.admin-layout .el-table td {
+  color: var(--color-text-primary) !important;
+  border-bottom: 1px solid var(--color-border-light) !important;
+}
+
+.admin-layout .el-table tr:hover td {
+  background: var(--color-background-secondary) !important;
+}
+
+/* 后台按钮统一样式 */
+.admin-layout .el-button--primary {
+  background: var(--color-primary) !important;
+  border-color: var(--color-primary) !important;
+}
+
+.admin-layout .el-button--primary:hover {
+  background: var(--color-primary-hover) !important;
+  border-color: var(--color-primary-hover) !important;
+}
+
+/* 后台分页器 */
+.admin-layout .el-pagination {
+  margin-top: 20px !important;
+}
+
+.admin-layout .el-pager li {
+  background: #ffffff !important;
+  color: var(--color-text-primary) !important;
+}
+
+.admin-layout .el-pager li.active {
+  background: var(--color-primary) !important;
+  color: #ffffff !important;
+}
+
+/* 后台对话框 */
+.el-dialog {
+  background: #ffffff !important;
+  border-radius: 12px !important;
+}
+
+.el-dialog__header {
+  background: var(--color-background-secondary) !important;
+  padding: 20px !important;
+  border-bottom: 1px solid var(--color-border) !important;
+}
+
+.el-dialog__title {
+  color: var(--color-text-primary) !important;
+  font-size: 18px !important;
+  font-weight: 600 !important;
+}
+
+.el-dialog__body {
+  background: #ffffff !important;
+  color: var(--color-text-primary) !important;
+}
+
+/* 后台表单 */
+.admin-layout .el-form-item__label {
+  color: var(--color-text-primary) !important;
+}
+
+.admin-layout .el-input__wrapper {
+  background: #ffffff !important;
+  border: 1px solid var(--color-border) !important;
+}
+
+.admin-layout .el-input__inner {
+  color: var(--color-text-primary) !important;
+}
+
+/* 后台标签 */
+.admin-layout .el-tag {
+  border-radius: 4px !important;
+}
+
+.admin-layout .el-tag--success {
+  background: rgba(5, 150, 105, 0.1) !important;
+  color: var(--color-success) !important;
+  border: 1px solid var(--color-success) !important;
+}
+
+.admin-layout .el-tag--warning {
+  background: rgba(245, 158, 11, 0.1) !important;
+  color: var(--color-warning) !important;
+  border: 1px solid var(--color-warning) !important;
+}
+
+.admin-layout .el-tag--danger {
+  background: rgba(217, 71, 71, 0.1) !important;
+  color: var(--color-danger) !important;
+  border: 1px solid var(--color-danger) !important;
+}
+
+.admin-layout .el-tag--info {
+  background: rgba(76, 111, 255, 0.1) !important;
+  color: var(--color-info) !important;
+  border: 1px solid var(--color-info) !important;
+}
+
+/* 移除所有渐变背景 */
+.admin-layout [class*="gradient"],
+.admin-layout [style*="gradient"] {
+  background: var(--color-primary) !important;
+}
+
+/* 确保所有文本可读 */
+.admin-layout * {
+  color: inherit;
+}
+
+.admin-layout [style*="color: white"],
+.admin-layout [style*="color: #fff"],
+.admin-layout [style*="color: #ffffff"] {
+  color: inherit !important;
+}
